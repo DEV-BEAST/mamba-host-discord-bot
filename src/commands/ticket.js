@@ -97,20 +97,29 @@ export async function execute(interaction) {
         ephemeral: true
       });
     }
-    
+
     const embed = new EmbedBuilder()
       .setColor(0xFF6B6B)
       .setTitle('🔒 Closing Ticket')
       .setDescription('This ticket will be closed in 5 seconds...')
       .setTimestamp();
-    
+
     await interaction.reply({ embeds: [embed] });
-    
+
+    // Store channel reference before deletion
+    const channelToDelete = interaction.channel;
+
     setTimeout(async () => {
       try {
-        await interaction.channel.delete();
+        await channelToDelete.delete();
       } catch (error) {
         console.error('Failed to delete ticket channel:', error);
+        // Try to send error message if channel still exists
+        try {
+          await channelToDelete.send('❌ Failed to close ticket. Please contact an administrator.');
+        } catch {
+          // Channel might already be deleted or bot lacks permissions
+        }
       }
     }, 5000);
   }

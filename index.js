@@ -3,6 +3,8 @@ import { config } from 'dotenv';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { readdirSync } from 'fs';
+import { handleButtonInteraction, handleModalSubmit } from './src/events/interactionCreate.js';
+import { handleMessageForXP } from './src/commands/leveling.js';
 
 config();
 
@@ -20,7 +22,7 @@ client.commands = new Collection();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const commandsPath = join(__dirname, 'src', 'commands');
-const commandFiles = readdirSync(commandsPath).filter(file => file.endsWith('.js'));
+const commandFiles = readdirSync(commandsPath).filter(file => file.endsWith('.js') && file !== 'index.js');
 
 const commands = [];
 
@@ -66,33 +68,96 @@ client.once(Events.ClientReady, (c) => {
   console.log(`✓ Bot is ready! Logged in as ${c.user.tag}`);
 });
 
+// Handle messages for XP tracking
+client.on(Events.MessageCreate, async (message) => {
+  try {
+    await handleMessageForXP(message);
+  } catch (error) {
+    console.error('Error handling message for XP:', error);
+  }
+});
+
 // Handle interactions
 client.on(Events.InteractionCreate, async (interaction) => {
-  if (!interaction.isChatInputCommand()) return;
+  // Handle slash commands
+  if (interaction.isChatInputCommand()) {
+    const command = client.commands.get(interaction.commandName);
 
-  const command = client.commands.get(interaction.commandName);
+    if (!command) {
+      console.error(`No command matching ${interaction.commandName} was found.`);
+      return;
+    }
 
-  if (!command) {
-    console.error(`No command matching ${interaction.commandName} was found.`);
-    return;
-  }
+    try {
+      await command.execute(interaction);
+    } catch (error) {
+      console.error(`Error executing ${interaction.commandName}:`, error);
 
-  try {
-    await command.execute(interaction);
-  } catch (error) {
-    console.error(`Error executing ${interaction.commandName}:`, error);
-    
-    const errorMessage = { 
-      content: 'There was an error while executing this command!', 
-      ephemeral: true 
-    };
+      const errorMessage = {
+        content: 'There was an error while executing this command!',
+        ephemeral: true
+      };
 
-    if (interaction.replied || interaction.deferred) {
-      await interaction.followUp(errorMessage);
-    } else {
-      await interaction.reply(errorMessage);
+      if (interaction.replied || interaction.deferred) {
+        await interaction.followUp(errorMessage);
+      } else {
+        await interaction.reply(errorMessage);
+      }
     }
   }
+
+  // Handle button interactions
+  else if (interaction.isButton()) {
+    try {
+      await handleButtonInteraction(interaction);
+    } catch (error) {
+      console.error('Error handling button interaction:', error);
+
+      const errorMessage = {
+        content: 'There was an error while processing this button!',
+        ephemeral: true
+      };
+
+      if (interaction.replied || interaction.deferred) {
+        await interaction.followUp(errorMessage);
+      } else {
+        await interaction.reply(errorMessage);
+      }
+    }
+  }
+
+  // Handle modal submissions
+  else if (interaction.isModalSubmit()) {
+    try {
+      await handleModalSubmit(interaction);
+    } catch (error) {
+      console.error('Error handling modal submission:', error);
+
+      const errorMessage = {
+        content: 'There was an error while processing this form!',
+        ephemeral: true
+      };
+
+      if (interaction.replied || interaction.deferred) {
+        await interaction.followUp(errorMessage);
+      } else {
+        await interaction.reply(errorMessage);
+      }
+    }
+  }
+});
+
+// Global error handlers to prevent crashes
+process.on('unhandledRejection', (error) => {
+  console.error('Unhandled promise rejection:', error);
+});
+
+process.on('uncaughtException', (error) => {
+  console.error('Uncaught exception:', error);
+});
+
+client.on('error', (error) => {
+  console.error('Discord client error:', error);
 });
 
 // Login to Discord
