@@ -3,7 +3,14 @@ import { EmbedBuilder, ChannelType, PermissionFlagsBits, ModalBuilder, TextInput
 export async function handleButtonInteraction(interaction) {
   const parts = interaction.customId.split(':');
   const action = parts[0];
-  
+
+  // Handle status refresh button
+  if (interaction.customId === 'status_refresh') {
+    const statusModule = await import('../commands/status.js');
+    await statusModule.handleStatusButton(interaction);
+    return;
+  }
+
   if (action === 'create_ticket') {
     const supportRoleId = parts[1];
     const categoryId = parts[2];
