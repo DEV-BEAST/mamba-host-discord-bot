@@ -123,6 +123,14 @@ function createStatusEmbed(statusData, cached = false, error = false) {
       return embed;
     }
 
+    // Debug logging
+    console.log('[Status] API Response Keys:', Object.keys(statusData));
+    console.log('[Status] Has publicGroupList:', !!statusData.publicGroupList);
+    if (statusData.publicGroupList) {
+      console.log('[Status] publicGroupList length:', statusData.publicGroupList.length);
+      console.log('[Status] publicGroupList structure:', JSON.stringify(statusData.publicGroupList, null, 2).substring(0, 500));
+    }
+
     const { heartbeatList, publicGroupList, config } = statusData;
 
     // Overall status
