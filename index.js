@@ -5,6 +5,7 @@ import { dirname, join } from 'path';
 import { readdirSync } from 'fs';
 import { handleButtonInteraction, handleModalSubmit } from './src/events/interactionCreate.js';
 import { handleMessageForXP } from './src/commands/leveling.js';
+import { startPresenceRotation } from './src/utils/presence.js';
 
 config();
 
@@ -66,6 +67,9 @@ const rest = new REST().setToken(process.env.BOT_TOKEN);
 // Bot ready event
 client.once(Events.ClientReady, (c) => {
   console.log(`✓ Bot is ready! Logged in as ${c.user.tag}`);
+
+  // Start rich presence rotation
+  startPresenceRotation(c, 30000); // Rotate every 30 seconds
 });
 
 // Handle messages for XP tracking
