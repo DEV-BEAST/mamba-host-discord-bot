@@ -144,7 +144,7 @@ export async function execute(interaction) {
         startPresenceRotation(interaction.client, intervalMs);
 
         await interaction.reply({
-          content: `✅ Presence rotation started!\n🔄 Rotating every **${interval} seconds**\n\nActivities include:\n• Watching MambaHost Services\n• Playing /status for uptime info\n• Watching server status\n• Watching your infrastructure\n• Listening /help for commands`,
+          content: `✅ Presence rotation started!\n🔄 Rotating every **${interval} seconds**\n\nActivities include:\n• Watching Mamba Host Services\n• Playing /status for uptime info\n• Watching server status\n• Watching your infrastructure\n• Listening /help for commands`,
           ephemeral: true
         });
         break;

@@ -7,7 +7,7 @@ import { ActivityType } from 'discord.js';
 
 const presenceActivities = [
   {
-    name: 'MambaHost Services',
+    name: 'Mamba Host Services',
     type: ActivityType.Watching,
   },
   {
@@ -106,7 +106,7 @@ export function stopPresenceRotation() {
 export function setCustomPresence(client, options = {}) {
   try {
     const {
-      name = 'MambaHost',
+      name = 'Mamba Host',
       type = ActivityType.Watching,
       status = 'online',
       url = null,

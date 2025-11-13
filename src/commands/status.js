@@ -13,7 +13,7 @@ const cache = {
 
 export const data = new SlashCommandBuilder()
   .setName('status')
-  .setDescription('Check MambaHost service status and uptime statistics');
+  .setDescription('Check Mamba Host service status and uptime statistics');
 
 /**
  * Fetch status data from Uptime Kuma API
@@ -29,14 +29,14 @@ async function fetchStatusData(useCache = true) {
     const [statusResponse, heartbeatResponse] = await Promise.all([
       fetch(API_STATUS_URL, {
         headers: {
-          'User-Agent': 'MambaHost-Discord-Bot/1.0',
+          'User-Agent': 'Mamba Host-Discord-Bot/1.0',
           'Accept': 'application/json',
         },
         timeout: 10000
       }),
       fetch(API_HEARTBEAT_URL, {
         headers: {
-          'User-Agent': 'MambaHost-Discord-Bot/1.0',
+          'User-Agent': 'Mamba Host-Discord-Bot/1.0',
           'Accept': 'application/json',
         },
         timeout: 10000
@@ -124,7 +124,7 @@ function formatDuration(ms) {
 function createStatusEmbed(statusData, cached = false, error = false) {
   const embed = new EmbedBuilder()
     .setColor(0xFF6F00)
-    .setTitle('🖥️ MambaHost Service Status')
+    .setTitle('🖥️ Mamba Host Service Status')
     .setURL(STATUS_PAGE_URL)
     .setTimestamp();
 
