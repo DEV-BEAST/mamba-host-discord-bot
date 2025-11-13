@@ -1,6 +1,7 @@
 import { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
 
-const API_URL = 'https://status.mambahost.com/api/status-page/heartbeat/mambahost';
+const API_STATUS_URL = 'https://status.mambahost.com/api/status-page/mambahost';
+const API_HEARTBEAT_URL = 'https://status.mambahost.com/api/status-page/heartbeat/mambahost';
 const STATUS_PAGE_URL = 'https://status.mambahost.com';
 
 // Cache for API responses (5 minute TTL)
@@ -24,19 +25,40 @@ async function fetchStatusData(useCache = true) {
   }
 
   try {
-    const response = await fetch(API_URL, {
-      headers: {
-        'User-Agent': 'MambaHost-Discord-Bot/1.0',
-        'Accept': 'application/json',
-      },
-      timeout: 10000
-    });
+    // Fetch both status page structure and heartbeat data
+    const [statusResponse, heartbeatResponse] = await Promise.all([
+      fetch(API_STATUS_URL, {
+        headers: {
+          'User-Agent': 'MambaHost-Discord-Bot/1.0',
+          'Accept': 'application/json',
+        },
+        timeout: 10000
+      }),
+      fetch(API_HEARTBEAT_URL, {
+        headers: {
+          'User-Agent': 'MambaHost-Discord-Bot/1.0',
+          'Accept': 'application/json',
+        },
+        timeout: 10000
+      })
+    ]);
 
-    if (!response.ok) {
-      throw new Error(`API returned status ${response.status}`);
+    if (!statusResponse.ok) {
+      throw new Error(`Status API returned ${statusResponse.status}`);
+    }
+    if (!heartbeatResponse.ok) {
+      throw new Error(`Heartbeat API returned ${heartbeatResponse.status}`);
     }
 
-    const data = await response.json();
+    const statusData = await statusResponse.json();
+    const heartbeatData = await heartbeatResponse.json();
+
+    // Merge the data
+    const data = {
+      ...statusData,
+      heartbeatList: heartbeatData.heartbeatList,
+      uptimeList: heartbeatData.uptimeList
+    };
 
     // Update cache
     cache.data = data;
@@ -117,17 +139,31 @@ function createStatusEmbed(statusData, cached = false, error = false) {
   embed.setFooter({ text: footerText });
 
   try {
-    if (!statusData || !statusData.heartbeatList) {
+    if (!statusData || !statusData.publicGroupList) {
       embed.setDescription('❌ Unable to fetch status data. The API may be temporarily unavailable.');
       embed.setColor(0xFF0000);
       return embed;
     }
 
-    const { heartbeatList, publicGroupList, config } = statusData;
+    const { heartbeatList, uptimeList, publicGroupList, config, incident, maintenanceList } = statusData;
 
     // Overall status
     let allOperational = true;
     const monitorStatuses = [];
+
+    // Display pinned incident if present
+    if (incident && incident.pin) {
+      const incidentColor = incident.style === 'danger' ? '🔴' :
+                           incident.style === 'warning' ? '🟡' :
+                           incident.style === 'info' ? '🔵' : '⚪';
+
+      embed.addFields({
+        name: `${incidentColor} ${incident.title}`,
+        value: incident.content.substring(0, 1024), // Discord field limit
+        inline: false
+      });
+      allOperational = false;
+    }
 
     // Process each monitor/service
     if (publicGroupList && publicGroupList.length > 0) {
@@ -140,14 +176,20 @@ function createStatusEmbed(statusData, cached = false, error = false) {
 
             const status = latestHeartbeat ? latestHeartbeat.status : 0;
             const { emoji, text, color } = getStatusDisplay(status);
-            const uptime = calculateUptime(heartbeats);
+
+            // Use API-provided uptime (24h) or calculate from heartbeats
+            const uptimeKey = `${monitorId}_24`;
+            const uptime = uptimeList && uptimeList[uptimeKey]
+              ? (uptimeList[uptimeKey] * 100).toFixed(2)
+              : calculateUptime(heartbeats);
+
             const ping = latestHeartbeat?.ping ? `${Math.round(latestHeartbeat.ping)}ms` : 'N/A';
 
             if (status !== 1) allOperational = false;
 
             monitorStatuses.push({
               name: `${emoji} ${monitor.name}`,
-              value: `**Status:** ${text}\n**Uptime:** ${uptime}%\n**Response:** ${ping}`,
+              value: `**Status:** ${text}\n**Uptime (24h):** ${uptime}%\n**Response:** ${ping}`,
               inline: true
             });
           }
@@ -182,11 +224,33 @@ function createStatusEmbed(statusData, cached = false, error = false) {
       embed.setDescription('📊 Status page configured but no monitors found.');
     }
 
-    // Add maintenance info if available
+    // Add maintenance windows if any
+    if (maintenanceList && maintenanceList.length > 0) {
+      const activeMaintenance = maintenanceList.filter(m => m.active && m.status !== 'ended');
+
+      if (activeMaintenance.length > 0) {
+        const maintenanceText = activeMaintenance.map(m => {
+          const statusEmoji = m.status === 'under-maintenance' ? '🔧' : '📅';
+          const timeslot = m.timeslotList && m.timeslotList[0];
+          const timeInfo = timeslot
+            ? `<t:${Math.floor(new Date(timeslot.startDate).getTime() / 1000)}:R>`
+            : '';
+          return `${statusEmoji} **${m.title}** ${timeInfo}`;
+        }).join('\n');
+
+        embed.addFields({
+          name: '🔧 Scheduled Maintenance',
+          value: maintenanceText.substring(0, 1024),
+          inline: false
+        });
+      }
+    }
+
+    // Add custom status page message if available
     if (config && config.statusPageMessage) {
       embed.addFields({
         name: '📢 Notice',
-        value: config.statusPageMessage,
+        value: config.statusPageMessage.substring(0, 1024),
         inline: false
       });
     }
