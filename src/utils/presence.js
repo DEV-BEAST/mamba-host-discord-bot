@@ -112,13 +112,23 @@ export function setCustomPresence(client, options = {}) {
       url = null,
     } = options;
 
+    // Resolve string type names to ActivityType enum values
+    const activityTypeMap = {
+      'playing': ActivityType.Playing,
+      'streaming': ActivityType.Streaming,
+      'listening': ActivityType.Listening,
+      'watching': ActivityType.Watching,
+      'competing': ActivityType.Competing,
+    };
+    const resolvedType = typeof type === 'string' ? activityTypeMap[type.toLowerCase()] ?? type : type;
+
     const activity = {
       name,
-      type,
+      type: resolvedType,
     };
 
     // Add URL for streaming type
-    if (type === ActivityType.Streaming && url) {
+    if (resolvedType === ActivityType.Streaming && url) {
       activity.url = url;
     }
 
@@ -127,7 +137,7 @@ export function setCustomPresence(client, options = {}) {
       status,
     });
 
-    console.log(`✓ Custom presence set: ${name} (${getActivityTypeName(type)})`);
+    console.log(`✓ Custom presence set: ${name} (${getActivityTypeName(resolvedType)})`);
   } catch (error) {
     console.error('Error setting custom presence:', error);
   }

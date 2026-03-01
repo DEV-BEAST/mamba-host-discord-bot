@@ -5,13 +5,14 @@ import { dirname, join } from 'path';
 import { readdirSync } from 'fs';
 import { handleButtonInteraction, handleModalSubmit } from './src/events/interactionCreate.js';
 import { handleMessageForXP } from './src/commands/leveling.js';
-import { startPresenceRotation } from './src/utils/presence.js';
+import { setCustomPresence } from './src/utils/presence.js';
 
 config();
 
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMembers,
     GatewayIntentBits.GuildMessages,
     GatewayIntentBits.MessageContent,
   ],
@@ -68,8 +69,25 @@ const rest = new REST().setToken(process.env.BOT_TOKEN);
 client.once(Events.ClientReady, (c) => {
   console.log(`✓ Bot is ready! Logged in as ${c.user.tag}`);
 
-  // Start rich presence rotation
-  startPresenceRotation(c, 30000); // Rotate every 30 seconds
+  // Set default presence (streaming)
+  setCustomPresence(c, {
+    name: 'Game Servers | Discord Bots | VPS',
+    type: 'streaming',
+    status: 'online',
+    url: 'https://www.mambahost.com/',
+  });
+});
+
+// Auto-assign role on member join
+const AUTO_ROLE_ID = '1427706395163099153';
+
+client.on(Events.GuildMemberAdd, async (member) => {
+  try {
+    await member.roles.add(AUTO_ROLE_ID);
+    console.log(`✓ Auto-assigned role to ${member.user.tag}`);
+  } catch (error) {
+    console.error(`Error auto-assigning role to ${member.user.tag}:`, error);
+  }
 });
 
 // Handle messages for XP tracking
