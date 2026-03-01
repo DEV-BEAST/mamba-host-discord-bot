@@ -12,52 +12,60 @@ import { createLeaderboardRouter } from './routes/api-leaderboard.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-/**
- * Start the Express dashboard server
- * @param {Client} client - Discord.js client
- * @param {Object} botConfig - Mutable bot configuration
- */
-export function startDashboard(client, botConfig) {
-  const app = express();
-  const port = process.env.SERVER_PORT || process.env.PORT || 3000;
+const app = express();
+const port = process.env.SERVER_PORT || process.env.PORT || 3000;
 
-  // Store references for route access
+// Middleware
+app.use(express.json());
+app.use(session({
+  secret: 'Beast1987!?-session-secret',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    httpOnly: true,
+    sameSite: 'lax',
+  },
+}));
+
+// Static files
+const publicPath = join(__dirname, '..', '..', 'dashboard', 'public');
+app.use(express.static(publicPath));
+
+// Auth routes (no auth required)
+app.use('/api/auth', createAuthRouter());
+
+// Middleware: block API calls until bot is connected
+app.use('/api', (req, res, next) => {
+  if (!app.locals.client) {
+    return res.status(503).json({ error: 'Bot is still starting up...' });
+  }
+  next();
+});
+
+// Protected API routes
+app.use('/api/stats', requireAuth, createStatsRouter());
+app.use('/api/guilds', requireAuth, createGuildsRouter());
+app.use('/api/settings', requireAuth, createSettingsRouter());
+app.use('/api/embed', requireAuth, createEmbedRouter());
+app.use('/api/leaderboard', requireAuth, createLeaderboardRouter());
+
+// SPA fallback — serve index.html for non-API routes
+app.get('/{*splat}', (req, res) => {
+  res.sendFile(join(publicPath, 'index.html'));
+});
+
+// Start listening immediately so the hosting panel detects the server
+app.listen(port, () => {
+  console.log(`✓ Dashboard running at http://localhost:${port}`);
+});
+
+/**
+ * Attach the Discord client + botConfig once the bot is ready.
+ * Called from index.js inside ClientReady.
+ */
+export function attachClient(client, botConfig) {
   app.locals.client = client;
   app.locals.botConfig = botConfig;
-
-  // Middleware
-  app.use(express.json());
-  app.use(session({
-    secret: 'Beast1987!?-session-secret',
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-      maxAge: 24 * 60 * 60 * 1000, // 24 hours
-      httpOnly: true,
-      sameSite: 'lax',
-    },
-  }));
-
-  // Static files
-  const publicPath = join(__dirname, '..', '..', 'dashboard', 'public');
-  app.use(express.static(publicPath));
-
-  // Auth routes (no auth required)
-  app.use('/api/auth', createAuthRouter());
-
-  // Protected API routes
-  app.use('/api/stats', requireAuth, createStatsRouter());
-  app.use('/api/guilds', requireAuth, createGuildsRouter());
-  app.use('/api/settings', requireAuth, createSettingsRouter());
-  app.use('/api/embed', requireAuth, createEmbedRouter());
-  app.use('/api/leaderboard', requireAuth, createLeaderboardRouter());
-
-  // SPA fallback — serve index.html for non-API routes
-  app.get('/{*splat}', (req, res) => {
-    res.sendFile(join(publicPath, 'index.html'));
-  });
-
-  app.listen(port, () => {
-    console.log(`✓ Dashboard running at http://localhost:${port}`);
-  });
+  console.log('✓ Dashboard connected to Discord client');
 }

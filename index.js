@@ -6,7 +6,7 @@ import { readdirSync } from 'fs';
 import { handleButtonInteraction, handleModalSubmit } from './src/events/interactionCreate.js';
 import { handleMessageForXP } from './src/commands/leveling.js';
 import { setCustomPresence } from './src/utils/presence.js';
-import { startDashboard } from './src/dashboard/server.js';
+import { attachClient } from './src/dashboard/server.js';
 import botConfig from './src/utils/botConfig.js';
 
 config();
@@ -79,8 +79,8 @@ client.once(Events.ClientReady, (c) => {
     url: 'https://www.mambahost.com/',
   });
 
-  // Start web dashboard
-  startDashboard(c, botConfig);
+  // Attach Discord client to the dashboard server
+  attachClient(c, botConfig);
 });
 
 // Auto-assign role on member join + welcome messages
