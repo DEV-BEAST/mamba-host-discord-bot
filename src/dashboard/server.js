@@ -53,7 +53,7 @@ export function startDashboard(client, botConfig) {
   app.use('/api/leaderboard', requireAuth, createLeaderboardRouter());
 
   // SPA fallback — serve index.html for non-API routes
-  app.get('*', (req, res) => {
+  app.get('/{*splat}', (req, res) => {
     res.sendFile(join(publicPath, 'index.html'));
   });
 
