@@ -6,6 +6,8 @@ import { readdirSync } from 'fs';
 import { handleButtonInteraction, handleModalSubmit } from './src/events/interactionCreate.js';
 import { handleMessageForXP } from './src/commands/leveling.js';
 import { setCustomPresence } from './src/utils/presence.js';
+import { startDashboard } from './src/dashboard/server.js';
+import botConfig from './src/utils/botConfig.js';
 
 config();
 
@@ -76,17 +78,37 @@ client.once(Events.ClientReady, (c) => {
     status: 'online',
     url: 'https://www.mambahost.com/',
   });
+
+  // Start web dashboard
+  startDashboard(c, botConfig);
 });
 
-// Auto-assign role on member join
-const AUTO_ROLE_ID = '1427706395163099153';
-
+// Auto-assign role on member join + welcome messages
 client.on(Events.GuildMemberAdd, async (member) => {
-  try {
-    await member.roles.add(AUTO_ROLE_ID);
-    console.log(`✓ Auto-assigned role to ${member.user.tag}`);
-  } catch (error) {
-    console.error(`Error auto-assigning role to ${member.user.tag}:`, error);
+  // Auto-role
+  if (botConfig.autoRoleId) {
+    try {
+      await member.roles.add(botConfig.autoRoleId);
+      console.log(`✓ Auto-assigned role to ${member.user.tag}`);
+    } catch (error) {
+      console.error(`Error auto-assigning role to ${member.user.tag}:`, error);
+    }
+  }
+
+  // Welcome message
+  if (botConfig.welcome.enabled && botConfig.welcome.channelId) {
+    try {
+      const channel = member.guild.channels.cache.get(botConfig.welcome.channelId);
+      if (channel) {
+        const msg = botConfig.welcome.message
+          .replace(/{user}/g, member.toString())
+          .replace(/{server}/g, member.guild.name)
+          .replace(/{memberCount}/g, member.guild.memberCount);
+        await channel.send(msg);
+      }
+    } catch (error) {
+      console.error(`Error sending welcome message for ${member.user.tag}:`, error);
+    }
   }
 });
 
@@ -111,6 +133,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
     }
 
     try {
+      botConfig.commandsRun++;
       await command.execute(interaction);
     } catch (error) {
       console.error(`Error executing ${interaction.commandName}:`, error);
