@@ -65,8 +65,12 @@ label{display:block;margin-bottom:4px;font-size:13px;font-weight:500;color:var(-
 /* ============ Login ============ */
 .login-screen{display:flex;align-items:center;justify-content:center;height:100vh}
 .login-card{background:var(--bg-main);padding:40px;border-radius:var(--radius);width:380px;text-align:center}
-.login-logo{font-size:28px;font-weight:700;margin-bottom:4px}
-.brand-accent{color:var(--accent)}
+.login-logo{
+  display:flex;align-items:center;justify-content:center;gap:12px;
+  font-family:'Orbitron',sans-serif;font-size:26px;font-weight:700;
+  color:var(--text-primary);margin-bottom:4px;letter-spacing:1px;
+}
+.login-logo-icon{width:48px;height:48px;object-fit:contain}
 .login-subtitle{color:var(--text-muted);margin-bottom:24px;font-size:14px}
 .login-card form{display:flex;flex-direction:column;gap:12px}
 
@@ -77,7 +81,13 @@ label{display:block;margin-bottom:4px;font-size:13px;font-weight:500;color:var(-
   width:var(--sidebar-width);min-width:var(--sidebar-width);background:var(--bg-dark);
   display:flex;flex-direction:column;padding:16px 0;
 }
-.sidebar-brand{padding:0 16px 16px;font-size:20px;font-weight:700;border-bottom:1px solid var(--border)}
+.sidebar-brand{
+  display:flex;align-items:center;gap:10px;
+  padding:0 16px 16px;font-family:'Orbitron',sans-serif;
+  font-size:15px;font-weight:700;letter-spacing:.5px;
+  color:var(--text-primary);border-bottom:1px solid var(--border);
+}
+.sidebar-logo-icon{width:28px;height:28px;object-fit:contain}
 .nav-links{list-style:none;flex:1;padding:8px 0}
 .nav-link{
   display:flex;align-items:center;gap:10px;padding:8px 16px;
