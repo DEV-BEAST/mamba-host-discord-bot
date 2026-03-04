@@ -15,28 +15,9 @@ export function render(container) {
       <p>Build and send rich embeds to any channel</p>
     </div>
 
-    <!-- Drop zone overlay -->
-    <div id="eb-drop-overlay" class="drop-overlay hidden">
-      <div class="drop-overlay-content">
-        <svg viewBox="0 0 24 24" width="48" height="48" fill="currentColor"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/></svg>
-        <p>Drop file to import</p>
-        <small class="text-muted">.json for embed data, .txt for text auto-fill</small>
-      </div>
-    </div>
-
-    <div class="embed-layout" id="eb-drop-target">
+    <div class="embed-layout">
       <!-- Editor -->
       <div class="embed-form">
-        <!-- Import/Export toolbar -->
-        <div class="card eb-toolbar">
-          <div class="flex-gap flex-wrap">
-            <button class="btn btn-secondary btn-sm" id="eb-export-json" title="Export embed as JSON">Export JSON</button>
-            <button class="btn btn-secondary btn-sm" id="eb-import-json" title="Import embed from JSON">Import JSON</button>
-            <input type="file" id="eb-file-input" accept=".json,.txt" class="hidden">
-            <span class="text-muted" style="font-size:12px;margin-left:auto">Drag & drop .json or .txt files anywhere</span>
-          </div>
-        </div>
-
         <div class="card">
           <div class="card-title">Channel</div>
           <div class="form-group">
@@ -95,6 +76,25 @@ export function render(container) {
 
         <button class="btn btn-primary" id="eb-send" style="width:100%;padding:12px">Send Embed</button>
         <div id="eb-status"></div>
+
+        <div class="card mt-16">
+          <div class="card-title">JSON Export / Import</div>
+          <div class="form-group">
+            <label>Export — current embed as JSON</label>
+            <textarea id="eb-json-export" rows="4" readonly placeholder="Click 'Copy to Export' to generate JSON"></textarea>
+            <div class="flex-gap mt-8">
+              <button class="btn btn-secondary btn-sm" id="eb-export-json">Copy to Export</button>
+            </div>
+          </div>
+          <div class="form-group mt-16">
+            <label>Import — paste JSON to load embed</label>
+            <textarea id="eb-json-import" rows="4" placeholder='Paste embed JSON here (supports Carl-bot format)'></textarea>
+            <div class="flex-gap mt-8">
+              <button class="btn btn-secondary btn-sm" id="eb-import-json">Load from JSON</button>
+            </div>
+          </div>
+          <div id="eb-json-status"></div>
+        </div>
       </div>
 
       <!-- Preview -->
@@ -110,7 +110,6 @@ export function render(container) {
   fields = [];
   loadGuilds();
   bindEvents();
-  bindDragDrop();
   updatePreview();
 }
 
@@ -173,57 +172,7 @@ function bindEvents() {
 
   // Export / Import
   document.getElementById('eb-export-json').addEventListener('click', exportJSON);
-  document.getElementById('eb-import-json').addEventListener('click', () => document.getElementById('eb-file-input').click());
-  document.getElementById('eb-file-input').addEventListener('change', handleFileSelect);
-}
-
-// ── Drag & Drop ──
-
-function bindDragDrop() {
-  const target = document.getElementById('eb-drop-target');
-  const overlay = document.getElementById('eb-drop-overlay');
-  let dragCounter = 0;
-
-  document.addEventListener('dragenter', (e) => {
-    e.preventDefault();
-    dragCounter++;
-    if (dragCounter === 1) overlay.classList.remove('hidden');
-  });
-
-  document.addEventListener('dragleave', (e) => {
-    e.preventDefault();
-    dragCounter--;
-    if (dragCounter <= 0) { dragCounter = 0; overlay.classList.add('hidden'); }
-  });
-
-  document.addEventListener('dragover', (e) => e.preventDefault());
-
-  document.addEventListener('drop', (e) => {
-    e.preventDefault();
-    dragCounter = 0;
-    overlay.classList.add('hidden');
-    const file = e.dataTransfer.files[0];
-    if (file) processFile(file);
-  });
-}
-
-function handleFileSelect(e) {
-  const file = e.target.files[0];
-  if (file) processFile(file);
-  e.target.value = '';
-}
-
-function processFile(file) {
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    const content = e.target.result;
-    if (file.name.endsWith('.json')) {
-      importFromJSON(content);
-    } else if (file.name.endsWith('.txt')) {
-      importFromText(content);
-    }
-  };
-  reader.readAsText(file);
+  document.getElementById('eb-import-json').addEventListener('click', importJSON);
 }
 
 // ── Import / Export ──
@@ -252,7 +201,6 @@ function getEmbedData() {
 
 function exportJSON() {
   const data = getEmbedData();
-  // Also include Carl-bot compatible "embed" wrapper
   const exportObj = {
     embed: {
       author: data.author.name ? data.author : undefined,
@@ -267,16 +215,26 @@ function exportJSON() {
       timestamp: data.timestamp ? new Date().toISOString() : undefined,
     }
   };
-  const blob = new Blob([JSON.stringify(exportObj, null, 2)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `embed-${Date.now()}.json`;
-  a.click();
-  URL.revokeObjectURL(url);
+  const json = JSON.stringify(exportObj, null, 2);
+  const textarea = document.getElementById('eb-json-export');
+  textarea.value = json;
+  textarea.select();
+  navigator.clipboard.writeText(json).then(() => {
+    showStatus(document.getElementById('eb-json-status'), 'JSON copied to clipboard');
+  }).catch(() => {
+    showStatus(document.getElementById('eb-json-status'), 'JSON exported to textbox (copy manually)');
+  });
 }
 
-function importFromJSON(content) {
+function importJSON() {
+  const content = document.getElementById('eb-json-import').value.trim();
+  const statusEl = document.getElementById('eb-json-status');
+
+  if (!content) {
+    showStatus(statusEl, 'Paste JSON into the textbox first', 'error');
+    return;
+  }
+
   try {
     let data = JSON.parse(content);
 
@@ -317,94 +275,10 @@ function importFromJSON(content) {
     }
     renderFields();
     updatePreview();
-    showStatus(document.getElementById('eb-status'), 'Embed imported from JSON');
+    showStatus(statusEl, 'Embed loaded from JSON');
   } catch (err) {
-    showStatus(document.getElementById('eb-status'), 'Invalid JSON: ' + err.message, 'error');
+    showStatus(statusEl, 'Invalid JSON: ' + err.message, 'error');
   }
-}
-
-function importFromText(content) {
-  const lines = content.replace(/\r\n/g, '\n').split('\n');
-
-  // Check for structured format: {title}Title text, {description}Desc, {field}Name|Value|inline
-  const hasMarkers = /^\{(title|description|field|author|footer|color|image|thumbnail)\}/im.test(content);
-
-  if (hasMarkers) {
-    importStructuredText(content);
-  } else {
-    // Simple mode: first non-empty line = title, rest = description
-    const nonEmpty = lines.filter(l => l.trim());
-    if (nonEmpty.length > 0) {
-      setVal('eb-title', nonEmpty[0].trim());
-      setVal('eb-description', nonEmpty.slice(1).join('\n').trim());
-    }
-    fields = [];
-    renderFields();
-    updatePreview();
-    showStatus(document.getElementById('eb-status'), 'Text imported (first line = title, rest = description)');
-  }
-}
-
-function importStructuredText(content) {
-  // Parse markers like:
-  //   {title}My Title
-  //   {description}My long description
-  //   that spans multiple lines
-  //   {field}Name|Value|true
-  //   {author}Author Name
-  //   {color}#FF6F00
-  //   {footer}Footer text
-  //   {image}https://...
-  //   {thumbnail}https://...
-
-  const sections = [];
-  const markerRegex = /^\{(title|description|field|author|footer|color|image|thumbnail)\}/im;
-  let currentMarker = null;
-  let currentContent = [];
-
-  for (const line of content.replace(/\r\n/g, '\n').split('\n')) {
-    const match = line.match(markerRegex);
-    if (match) {
-      if (currentMarker) sections.push({ type: currentMarker, content: currentContent.join('\n').trim() });
-      currentMarker = match[1].toLowerCase();
-      currentContent = [line.replace(markerRegex, '').trim()];
-    } else {
-      currentContent.push(line);
-    }
-  }
-  if (currentMarker) sections.push({ type: currentMarker, content: currentContent.join('\n').trim() });
-
-  // Reset
-  setVal('eb-title', '');
-  setVal('eb-description', '');
-  setVal('eb-author-name', '');
-  setVal('eb-footer-text', '');
-  fields = [];
-
-  for (const s of sections) {
-    switch (s.type) {
-      case 'title': setVal('eb-title', s.content); break;
-      case 'description': setVal('eb-description', s.content); break;
-      case 'author': setVal('eb-author-name', s.content); break;
-      case 'footer': setVal('eb-footer-text', s.content); break;
-      case 'color': setVal('eb-color', s.content); break;
-      case 'image': setVal('eb-image', s.content); break;
-      case 'thumbnail': setVal('eb-thumbnail', s.content); break;
-      case 'field': {
-        const parts = s.content.split('|');
-        fields.push({
-          name: (parts[0] || '').trim(),
-          value: (parts[1] || '').trim(),
-          inline: (parts[2] || '').trim().toLowerCase() === 'true',
-        });
-        break;
-      }
-    }
-  }
-
-  renderFields();
-  updatePreview();
-  showStatus(document.getElementById('eb-status'), 'Structured text imported');
 }
 
 // ── Field management ──

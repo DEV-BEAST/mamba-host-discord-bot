@@ -139,23 +139,8 @@ label{display:block;margin-bottom:4px;font-size:13px;font-weight:500;color:var(-
 .field-entry input{flex:1}
 .field-entry label{display:flex;align-items:center;gap:4px;font-size:12px;white-space:nowrap;margin-bottom:0}
 
-/* ============ Embed Builder Toolbar ============ */
-.eb-toolbar{padding:12px 20px}
+/* ============ Embed Builder ============ */
 .flex-wrap{flex-wrap:wrap}
-
-/* ============ Drop Overlay ============ */
-.drop-overlay{
-  position:fixed;top:0;left:0;right:0;bottom:0;
-  background:rgba(0,0,0,.7);z-index:1000;
-  display:flex;align-items:center;justify-content:center;
-  pointer-events:none;
-}
-.drop-overlay-content{
-  background:var(--bg-main);border:2px dashed var(--accent);border-radius:16px;
-  padding:48px 64px;text-align:center;color:var(--text-primary);
-}
-.drop-overlay-content svg{color:var(--accent);margin-bottom:12px}
-.drop-overlay-content p{font-size:18px;font-weight:600;margin-bottom:4px}
 
 /* ============ Discord Embed Preview (pixel-accurate) ============ */
 .embed-preview-wrapper{position:sticky;top:24px}
