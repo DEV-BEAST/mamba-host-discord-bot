@@ -191,6 +191,38 @@ function getEmbedData() {
   };
 }
 
+function populateFromData(data) {
+  document.getElementById('eb-author-name').value = data.author?.name || '';
+  document.getElementById('eb-author-icon').value = data.author?.iconURL || data.author?.icon_url || '';
+  document.getElementById('eb-author-url').value = data.author?.url || '';
+  document.getElementById('eb-title').value = data.title || '';
+  document.getElementById('eb-url').value = data.url || '';
+  document.getElementById('eb-description').value = data.description || '';
+
+  if (data.color !== undefined && data.color !== null) {
+    const hex = typeof data.color === 'number'
+      ? '#' + data.color.toString(16).padStart(6, '0')
+      : data.color;
+    document.getElementById('eb-color').value = hex;
+  }
+
+  document.getElementById('eb-thumbnail').value = (typeof data.thumbnail === 'object' ? data.thumbnail?.url : data.thumbnail) || '';
+  document.getElementById('eb-image').value = (typeof data.image === 'object' ? data.image?.url : data.image) || '';
+  document.getElementById('eb-footer-text').value = data.footer?.text || '';
+  document.getElementById('eb-footer-icon').value = data.footer?.iconURL || data.footer?.icon_url || '';
+  document.getElementById('eb-timestamp').checked = !!data.timestamp;
+
+  fields = [];
+  if (data.fields && Array.isArray(data.fields)) {
+    for (const f of data.fields) {
+      fields.push({ name: f.name || '', value: f.value || '', inline: !!f.inline });
+    }
+  }
+  renderFields();
+  // Defer preview update to ensure DOM has settled
+  setTimeout(() => updatePreview(), 0);
+}
+
 function exportJSON() {
   const data = getEmbedData();
   const exportObj = {
@@ -232,36 +264,7 @@ function handleFileImport(e) {
       if (data.embed) data = data.embed;
       else if (data.embeds && data.embeds[0]) data = data.embeds[0];
 
-      setVal('eb-author-name', data.author?.name || '');
-      setVal('eb-author-icon', data.author?.iconURL || data.author?.icon_url || '');
-      setVal('eb-author-url', data.author?.url || '');
-      setVal('eb-title', data.title || '');
-      setVal('eb-url', data.url || '');
-      setVal('eb-description', data.description || '');
-
-      if (data.color !== undefined && data.color !== null) {
-        const hex = typeof data.color === 'number'
-          ? '#' + data.color.toString(16).padStart(6, '0')
-          : data.color;
-        setVal('eb-color', hex);
-      }
-
-      setVal('eb-thumbnail', data.thumbnail?.url || data.thumbnail || '');
-      setVal('eb-image', data.image?.url || data.image || '');
-      setVal('eb-footer-text', data.footer?.text || '');
-      setVal('eb-footer-icon', data.footer?.iconURL || data.footer?.icon_url || '');
-
-      const tsEl = document.getElementById('eb-timestamp');
-      if (tsEl) tsEl.checked = !!data.timestamp;
-
-      fields = [];
-      if (data.fields && Array.isArray(data.fields)) {
-        for (const f of data.fields) {
-          fields.push({ name: f.name || '', value: f.value || '', inline: !!f.inline });
-        }
-      }
-      renderFields();
-      updatePreview();
+      populateFromData(data);
       showStatus(statusEl, 'Embed imported from ' + file.name);
     } catch (err) {
       showStatus(statusEl, 'Invalid JSON: ' + err.message, 'error');

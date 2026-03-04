@@ -67,8 +67,8 @@ label{display:block;margin-bottom:4px;font-size:13px;font-weight:500;color:var(-
 .login-card{background:var(--bg-main);padding:40px;border-radius:var(--radius);width:380px;text-align:center}
 .login-logo{
   display:flex;align-items:center;justify-content:center;gap:12px;
-  font-family:'Orbitron',sans-serif;font-size:36px;font-weight:700;
-  color:var(--text-primary);margin-bottom:4px;letter-spacing:1px;
+  font-family:'Orbitron',sans-serif;font-size:28px;font-weight:700;
+  color:var(--text-primary);margin-bottom:4px;letter-spacing:1px;white-space:nowrap;
 }
 .login-logo-icon{width:48px;height:48px;object-fit:contain}
 .login-subtitle{color:var(--text-muted);margin-bottom:24px;font-size:14px}
