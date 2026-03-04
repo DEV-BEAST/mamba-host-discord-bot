@@ -118,7 +118,10 @@ export function showStatus(container, message, type = 'success') {
   el.className = `status-msg ${type}`;
   el.textContent = message;
   el.style.display = '';
-  setTimeout(() => { el.style.display = 'none'; }, 4000);
+  // Only auto-hide success messages; errors stay visible
+  if (type === 'success') {
+    setTimeout(() => { el.style.display = 'none'; }, 4000);
+  }
 }
 
 // ── Init ──
