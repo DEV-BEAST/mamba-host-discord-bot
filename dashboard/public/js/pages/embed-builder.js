@@ -79,19 +79,10 @@ export function render(container) {
 
         <div class="card mt-16">
           <div class="card-title">JSON Export / Import</div>
-          <div class="form-group">
-            <label>Export — current embed as JSON</label>
-            <textarea id="eb-json-export" rows="4" readonly placeholder="Click 'Copy to Export' to generate JSON"></textarea>
-            <div class="flex-gap mt-8">
-              <button class="btn btn-secondary btn-sm" id="eb-export-json">Copy to Export</button>
-            </div>
-          </div>
-          <div class="form-group mt-16">
-            <label>Import — paste JSON to load embed</label>
-            <textarea id="eb-json-import" rows="4" placeholder='Paste embed JSON here (supports Carl-bot format)'></textarea>
-            <div class="flex-gap mt-8">
-              <button class="btn btn-secondary btn-sm" id="eb-import-json">Load from JSON</button>
-            </div>
+          <div class="flex-gap flex-wrap">
+            <button class="btn btn-secondary btn-sm" id="eb-export-json">Export JSON</button>
+            <button class="btn btn-secondary btn-sm" id="eb-import-json">Import JSON</button>
+            <input type="file" id="eb-file-input" accept=".json" class="hidden">
           </div>
           <div id="eb-json-status"></div>
         </div>
@@ -172,7 +163,8 @@ function bindEvents() {
 
   // Export / Import
   document.getElementById('eb-export-json').addEventListener('click', exportJSON);
-  document.getElementById('eb-import-json').addEventListener('click', importJSON);
+  document.getElementById('eb-import-json').addEventListener('click', () => document.getElementById('eb-file-input').click());
+  document.getElementById('eb-file-input').addEventListener('change', handleFileImport);
 }
 
 // ── Import / Export ──
@@ -215,70 +207,67 @@ function exportJSON() {
       timestamp: data.timestamp ? new Date().toISOString() : undefined,
     }
   };
-  const json = JSON.stringify(exportObj, null, 2);
-  const textarea = document.getElementById('eb-json-export');
-  textarea.value = json;
-  textarea.select();
-  navigator.clipboard.writeText(json).then(() => {
-    showStatus(document.getElementById('eb-json-status'), 'JSON copied to clipboard');
-  }).catch(() => {
-    showStatus(document.getElementById('eb-json-status'), 'JSON exported to textbox (copy manually)');
-  });
+  const blob = new Blob([JSON.stringify(exportObj, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `embed-${Date.now()}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showStatus(document.getElementById('eb-json-status'), 'JSON file downloaded');
 }
 
-function importJSON() {
-  const content = document.getElementById('eb-json-import').value.trim();
+function handleFileImport(e) {
+  const file = e.target.files[0];
+  e.target.value = '';
+  if (!file) return;
+
   const statusEl = document.getElementById('eb-json-status');
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    try {
+      let data = JSON.parse(ev.target.result);
 
-  if (!content) {
-    showStatus(statusEl, 'Paste JSON into the textbox first', 'error');
-    return;
-  }
+      // Support Carl-bot format: { embed: { ... } } or { embeds: [{ ... }] }
+      if (data.embed) data = data.embed;
+      else if (data.embeds && data.embeds[0]) data = data.embeds[0];
 
-  try {
-    let data = JSON.parse(content);
+      setVal('eb-author-name', data.author?.name || '');
+      setVal('eb-author-icon', data.author?.iconURL || data.author?.icon_url || '');
+      setVal('eb-author-url', data.author?.url || '');
+      setVal('eb-title', data.title || '');
+      setVal('eb-url', data.url || '');
+      setVal('eb-description', data.description || '');
 
-    // Support Carl-bot format: { embed: { ... } } or { embeds: [{ ... }] }
-    if (data.embed) data = data.embed;
-    else if (data.embeds && data.embeds[0]) data = data.embeds[0];
-
-    // Populate fields
-    setVal('eb-author-name', data.author?.name || '');
-    setVal('eb-author-icon', data.author?.iconURL || data.author?.icon_url || '');
-    setVal('eb-author-url', data.author?.url || '');
-    setVal('eb-title', data.title || '');
-    setVal('eb-url', data.url || '');
-    setVal('eb-description', data.description || '');
-
-    // Color: can be hex string or integer
-    if (data.color !== undefined && data.color !== null) {
-      const hex = typeof data.color === 'number'
-        ? '#' + data.color.toString(16).padStart(6, '0')
-        : data.color;
-      setVal('eb-color', hex);
-    }
-
-    setVal('eb-thumbnail', data.thumbnail?.url || data.thumbnail || '');
-    setVal('eb-image', data.image?.url || data.image || '');
-    setVal('eb-footer-text', data.footer?.text || '');
-    setVal('eb-footer-icon', data.footer?.iconURL || data.footer?.icon_url || '');
-
-    const tsEl = document.getElementById('eb-timestamp');
-    if (tsEl) tsEl.checked = !!data.timestamp;
-
-    // Fields
-    fields = [];
-    if (data.fields && Array.isArray(data.fields)) {
-      for (const f of data.fields) {
-        fields.push({ name: f.name || '', value: f.value || '', inline: !!f.inline });
+      if (data.color !== undefined && data.color !== null) {
+        const hex = typeof data.color === 'number'
+          ? '#' + data.color.toString(16).padStart(6, '0')
+          : data.color;
+        setVal('eb-color', hex);
       }
+
+      setVal('eb-thumbnail', data.thumbnail?.url || data.thumbnail || '');
+      setVal('eb-image', data.image?.url || data.image || '');
+      setVal('eb-footer-text', data.footer?.text || '');
+      setVal('eb-footer-icon', data.footer?.iconURL || data.footer?.icon_url || '');
+
+      const tsEl = document.getElementById('eb-timestamp');
+      if (tsEl) tsEl.checked = !!data.timestamp;
+
+      fields = [];
+      if (data.fields && Array.isArray(data.fields)) {
+        for (const f of data.fields) {
+          fields.push({ name: f.name || '', value: f.value || '', inline: !!f.inline });
+        }
+      }
+      renderFields();
+      updatePreview();
+      showStatus(statusEl, 'Embed imported from ' + file.name);
+    } catch (err) {
+      showStatus(statusEl, 'Invalid JSON: ' + err.message, 'error');
     }
-    renderFields();
-    updatePreview();
-    showStatus(statusEl, 'Embed loaded from JSON');
-  } catch (err) {
-    showStatus(statusEl, 'Invalid JSON: ' + err.message, 'error');
-  }
+  };
+  reader.readAsText(file);
 }
 
 // ── Field management ──
