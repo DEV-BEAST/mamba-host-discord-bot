@@ -14,9 +14,29 @@ export function render(container) {
       <h1>Embed Builder</h1>
       <p>Build and send rich embeds to any channel</p>
     </div>
-    <div class="embed-layout">
+
+    <!-- Drop zone overlay -->
+    <div id="eb-drop-overlay" class="drop-overlay hidden">
+      <div class="drop-overlay-content">
+        <svg viewBox="0 0 24 24" width="48" height="48" fill="currentColor"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/></svg>
+        <p>Drop file to import</p>
+        <small class="text-muted">.json for embed data, .txt for text auto-fill</small>
+      </div>
+    </div>
+
+    <div class="embed-layout" id="eb-drop-target">
       <!-- Editor -->
       <div class="embed-form">
+        <!-- Import/Export toolbar -->
+        <div class="card eb-toolbar">
+          <div class="flex-gap flex-wrap">
+            <button class="btn btn-secondary btn-sm" id="eb-export-json" title="Export embed as JSON">Export JSON</button>
+            <button class="btn btn-secondary btn-sm" id="eb-import-json" title="Import embed from JSON">Import JSON</button>
+            <input type="file" id="eb-file-input" accept=".json,.txt" class="hidden">
+            <span class="text-muted" style="font-size:12px;margin-left:auto">Drag & drop .json or .txt files anywhere</span>
+          </div>
+        </div>
+
         <div class="card">
           <div class="card-title">Channel</div>
           <div class="form-group">
@@ -40,7 +60,7 @@ export function render(container) {
           <div class="card-title">Body</div>
           <div class="form-group"><label>Title</label><input type="text" id="eb-title" placeholder="Embed title"></div>
           <div class="form-group"><label>Title URL</label><input type="url" id="eb-url" placeholder="https://..."></div>
-          <div class="form-group"><label>Description</label><textarea id="eb-description" rows="4" placeholder="Embed description... Supports **bold**, *italic*, __underline__, ~~strikethrough~~, \`code\`"></textarea></div>
+          <div class="form-group"><label>Description</label><textarea id="eb-description" rows="4" placeholder="Supports **bold**, *italic*, __underline__, ~~strikethrough~~, \`code\`, \`\`\`code blocks\`\`\`, > blockquotes, [links](url), and ||spoilers||"></textarea></div>
           <div class="form-group">
             <label>Color</label>
             <div class="color-row">
@@ -51,7 +71,7 @@ export function render(container) {
         </div>
 
         <div class="card">
-          <div class="card-title">Fields</div>
+          <div class="card-title">Fields <small class="text-muted">(max 25)</small></div>
           <div id="eb-fields-list"></div>
           <button class="btn btn-secondary btn-sm mt-8" id="eb-add-field">+ Add Field</button>
         </div>
@@ -81,7 +101,7 @@ export function render(container) {
       <div class="embed-preview-wrapper">
         <div class="card">
           <div class="card-title">Preview</div>
-          <div id="eb-preview"></div>
+          <div class="discord-message-wrapper" id="eb-preview"></div>
         </div>
       </div>
     </div>
@@ -90,16 +110,19 @@ export function render(container) {
   fields = [];
   loadGuilds();
   bindEvents();
+  bindDragDrop();
   updatePreview();
 }
 
 export function destroy() {}
 
+// ── Data loading ──
+
 async function loadGuilds() {
   try {
     const guilds = await get('/api/guilds');
     document.getElementById('eb-guild').innerHTML = '<option value="">Select a server...</option>' +
-      guilds.map(g => `<option value="${g.id}">${g.name}</option>`).join('');
+      guilds.map(g => `<option value="${g.id}">${esc(g.name)}</option>`).join('');
   } catch (err) {
     console.error('Failed to load guilds:', err);
   }
@@ -107,21 +130,19 @@ async function loadGuilds() {
 
 async function loadChannels(guildId) {
   const sel = document.getElementById('eb-channel');
-  if (!guildId) {
-    sel.innerHTML = '<option value="">Select a channel...</option>';
-    return;
-  }
+  if (!guildId) { sel.innerHTML = '<option value="">Select a channel...</option>'; return; }
   try {
     const data = await get(`/api/guilds/${guildId}/channels`);
     sel.innerHTML = '<option value="">Select a channel...</option>' +
-      data.channels.map(c => `<option value="${c.id}">#${c.name}${c.category ? ` (${c.category})` : ''}</option>`).join('');
+      data.channels.map(c => `<option value="${c.id}">#${esc(c.name)}${c.category ? ` (${esc(c.category)})` : ''}</option>`).join('');
   } catch (err) {
     console.error('Failed to load channels:', err);
   }
 }
 
+// ── Events ──
+
 function bindEvents() {
-  // Guild → load channels
   document.getElementById('eb-guild').addEventListener('change', e => loadChannels(e.target.value));
 
   // Color swatches
@@ -136,56 +157,76 @@ function bindEvents() {
 
   // Add field
   document.getElementById('eb-add-field').addEventListener('click', () => {
+    if (fields.length >= 25) return;
     fields.push({ name: '', value: '', inline: false });
     renderFields();
     updatePreview();
   });
 
-  // Live preview on any input change
+  // Live preview
   const form = document.querySelector('.embed-form');
   form.addEventListener('input', updatePreview);
   form.addEventListener('change', updatePreview);
 
   // Send
   document.getElementById('eb-send').addEventListener('click', sendEmbed);
+
+  // Export / Import
+  document.getElementById('eb-export-json').addEventListener('click', exportJSON);
+  document.getElementById('eb-import-json').addEventListener('click', () => document.getElementById('eb-file-input').click());
+  document.getElementById('eb-file-input').addEventListener('change', handleFileSelect);
 }
 
-function renderFields() {
-  const list = document.getElementById('eb-fields-list');
-  list.innerHTML = fields.map((f, i) => `
-    <div class="field-entry">
-      <input type="text" placeholder="Field name" value="${escapeAttr(f.name)}" data-field="${i}" data-prop="name">
-      <input type="text" placeholder="Field value" value="${escapeAttr(f.value)}" data-field="${i}" data-prop="value">
-      <label><input type="checkbox" ${f.inline ? 'checked' : ''} data-field="${i}" data-prop="inline"> Inline</label>
-      <button class="btn btn-danger btn-sm" data-remove="${i}">&times;</button>
-    </div>
-  `).join('');
+// ── Drag & Drop ──
 
-  // Field input listeners
-  list.querySelectorAll('input[data-field]').forEach(inp => {
-    inp.addEventListener('input', () => {
-      const idx = parseInt(inp.dataset.field);
-      const prop = inp.dataset.prop;
-      fields[idx][prop] = prop === 'inline' ? inp.checked : inp.value;
-      updatePreview();
-    });
-    inp.addEventListener('change', () => {
-      const idx = parseInt(inp.dataset.field);
-      const prop = inp.dataset.prop;
-      fields[idx][prop] = prop === 'inline' ? inp.checked : inp.value;
-      updatePreview();
-    });
+function bindDragDrop() {
+  const target = document.getElementById('eb-drop-target');
+  const overlay = document.getElementById('eb-drop-overlay');
+  let dragCounter = 0;
+
+  document.addEventListener('dragenter', (e) => {
+    e.preventDefault();
+    dragCounter++;
+    if (dragCounter === 1) overlay.classList.remove('hidden');
   });
 
-  // Remove field
-  list.querySelectorAll('[data-remove]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      fields.splice(parseInt(btn.dataset.remove), 1);
-      renderFields();
-      updatePreview();
-    });
+  document.addEventListener('dragleave', (e) => {
+    e.preventDefault();
+    dragCounter--;
+    if (dragCounter <= 0) { dragCounter = 0; overlay.classList.add('hidden'); }
+  });
+
+  document.addEventListener('dragover', (e) => e.preventDefault());
+
+  document.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dragCounter = 0;
+    overlay.classList.add('hidden');
+    const file = e.dataTransfer.files[0];
+    if (file) processFile(file);
   });
 }
+
+function handleFileSelect(e) {
+  const file = e.target.files[0];
+  if (file) processFile(file);
+  e.target.value = '';
+}
+
+function processFile(file) {
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const content = e.target.result;
+    if (file.name.endsWith('.json')) {
+      importFromJSON(content);
+    } else if (file.name.endsWith('.txt')) {
+      importFromText(content);
+    }
+  };
+  reader.readAsText(file);
+}
+
+// ── Import / Export ──
 
 function getEmbedData() {
   return {
@@ -209,84 +250,376 @@ function getEmbedData() {
   };
 }
 
+function exportJSON() {
+  const data = getEmbedData();
+  // Also include Carl-bot compatible "embed" wrapper
+  const exportObj = {
+    embed: {
+      author: data.author.name ? data.author : undefined,
+      title: data.title || undefined,
+      url: data.url || undefined,
+      description: data.description || undefined,
+      color: data.color ? parseInt(data.color.replace('#', ''), 16) : undefined,
+      fields: data.fields.length > 0 ? data.fields : undefined,
+      thumbnail: data.thumbnail ? { url: data.thumbnail } : undefined,
+      image: data.image ? { url: data.image } : undefined,
+      footer: data.footer.text ? data.footer : undefined,
+      timestamp: data.timestamp ? new Date().toISOString() : undefined,
+    }
+  };
+  const blob = new Blob([JSON.stringify(exportObj, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `embed-${Date.now()}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function importFromJSON(content) {
+  try {
+    let data = JSON.parse(content);
+
+    // Support Carl-bot format: { embed: { ... } } or { embeds: [{ ... }] }
+    if (data.embed) data = data.embed;
+    else if (data.embeds && data.embeds[0]) data = data.embeds[0];
+
+    // Populate fields
+    setVal('eb-author-name', data.author?.name || '');
+    setVal('eb-author-icon', data.author?.iconURL || data.author?.icon_url || '');
+    setVal('eb-author-url', data.author?.url || '');
+    setVal('eb-title', data.title || '');
+    setVal('eb-url', data.url || '');
+    setVal('eb-description', data.description || '');
+
+    // Color: can be hex string or integer
+    if (data.color !== undefined && data.color !== null) {
+      const hex = typeof data.color === 'number'
+        ? '#' + data.color.toString(16).padStart(6, '0')
+        : data.color;
+      setVal('eb-color', hex);
+    }
+
+    setVal('eb-thumbnail', data.thumbnail?.url || data.thumbnail || '');
+    setVal('eb-image', data.image?.url || data.image || '');
+    setVal('eb-footer-text', data.footer?.text || '');
+    setVal('eb-footer-icon', data.footer?.iconURL || data.footer?.icon_url || '');
+
+    const tsEl = document.getElementById('eb-timestamp');
+    if (tsEl) tsEl.checked = !!data.timestamp;
+
+    // Fields
+    fields = [];
+    if (data.fields && Array.isArray(data.fields)) {
+      for (const f of data.fields) {
+        fields.push({ name: f.name || '', value: f.value || '', inline: !!f.inline });
+      }
+    }
+    renderFields();
+    updatePreview();
+    showStatus(document.getElementById('eb-status'), 'Embed imported from JSON');
+  } catch (err) {
+    showStatus(document.getElementById('eb-status'), 'Invalid JSON: ' + err.message, 'error');
+  }
+}
+
+function importFromText(content) {
+  const lines = content.replace(/\r\n/g, '\n').split('\n');
+
+  // Check for structured format: {title}Title text, {description}Desc, {field}Name|Value|inline
+  const hasMarkers = /^\{(title|description|field|author|footer|color|image|thumbnail)\}/im.test(content);
+
+  if (hasMarkers) {
+    importStructuredText(content);
+  } else {
+    // Simple mode: first non-empty line = title, rest = description
+    const nonEmpty = lines.filter(l => l.trim());
+    if (nonEmpty.length > 0) {
+      setVal('eb-title', nonEmpty[0].trim());
+      setVal('eb-description', nonEmpty.slice(1).join('\n').trim());
+    }
+    fields = [];
+    renderFields();
+    updatePreview();
+    showStatus(document.getElementById('eb-status'), 'Text imported (first line = title, rest = description)');
+  }
+}
+
+function importStructuredText(content) {
+  // Parse markers like:
+  //   {title}My Title
+  //   {description}My long description
+  //   that spans multiple lines
+  //   {field}Name|Value|true
+  //   {author}Author Name
+  //   {color}#FF6F00
+  //   {footer}Footer text
+  //   {image}https://...
+  //   {thumbnail}https://...
+
+  const sections = [];
+  const markerRegex = /^\{(title|description|field|author|footer|color|image|thumbnail)\}/im;
+  let currentMarker = null;
+  let currentContent = [];
+
+  for (const line of content.replace(/\r\n/g, '\n').split('\n')) {
+    const match = line.match(markerRegex);
+    if (match) {
+      if (currentMarker) sections.push({ type: currentMarker, content: currentContent.join('\n').trim() });
+      currentMarker = match[1].toLowerCase();
+      currentContent = [line.replace(markerRegex, '').trim()];
+    } else {
+      currentContent.push(line);
+    }
+  }
+  if (currentMarker) sections.push({ type: currentMarker, content: currentContent.join('\n').trim() });
+
+  // Reset
+  setVal('eb-title', '');
+  setVal('eb-description', '');
+  setVal('eb-author-name', '');
+  setVal('eb-footer-text', '');
+  fields = [];
+
+  for (const s of sections) {
+    switch (s.type) {
+      case 'title': setVal('eb-title', s.content); break;
+      case 'description': setVal('eb-description', s.content); break;
+      case 'author': setVal('eb-author-name', s.content); break;
+      case 'footer': setVal('eb-footer-text', s.content); break;
+      case 'color': setVal('eb-color', s.content); break;
+      case 'image': setVal('eb-image', s.content); break;
+      case 'thumbnail': setVal('eb-thumbnail', s.content); break;
+      case 'field': {
+        const parts = s.content.split('|');
+        fields.push({
+          name: (parts[0] || '').trim(),
+          value: (parts[1] || '').trim(),
+          inline: (parts[2] || '').trim().toLowerCase() === 'true',
+        });
+        break;
+      }
+    }
+  }
+
+  renderFields();
+  updatePreview();
+  showStatus(document.getElementById('eb-status'), 'Structured text imported');
+}
+
+// ── Field management ──
+
+function renderFields() {
+  const list = document.getElementById('eb-fields-list');
+  list.innerHTML = fields.map((f, i) => `
+    <div class="field-entry">
+      <input type="text" placeholder="Field name" value="${escAttr(f.name)}" data-field="${i}" data-prop="name">
+      <input type="text" placeholder="Field value" value="${escAttr(f.value)}" data-field="${i}" data-prop="value">
+      <label><input type="checkbox" ${f.inline ? 'checked' : ''} data-field="${i}" data-prop="inline"> Inline</label>
+      <button class="btn btn-danger btn-sm" data-remove="${i}">&times;</button>
+    </div>
+  `).join('');
+
+  list.querySelectorAll('input[data-field]').forEach(inp => {
+    const handler = () => {
+      const idx = parseInt(inp.dataset.field);
+      const prop = inp.dataset.prop;
+      fields[idx][prop] = prop === 'inline' ? inp.checked : inp.value;
+      updatePreview();
+    };
+    inp.addEventListener('input', handler);
+    inp.addEventListener('change', handler);
+  });
+
+  list.querySelectorAll('[data-remove]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      fields.splice(parseInt(btn.dataset.remove), 1);
+      renderFields();
+      updatePreview();
+    });
+  });
+}
+
+// ── Preview rendering (pixel-accurate Discord) ──
+
 function updatePreview() {
   const data = getEmbedData();
   const preview = document.getElementById('eb-preview');
   if (!preview) return;
 
-  const color = data.color || '#FF6F00';
-  const hasContent = data.author.name || data.title || data.description || data.fields.length || data.thumbnail || data.image || data.footer.text;
+  const color = data.color || '#202225';
+  const hasContent = data.author.name || data.title || data.description || data.fields.length ||
+    data.thumbnail || data.image || data.footer.text || data.timestamp;
 
   if (!hasContent) {
     preview.innerHTML = '<p class="text-muted">Start typing to see a preview...</p>';
     return;
   }
 
-  let html = `<div class="embed-preview"><div class="color-bar" style="background:${color}"></div><div class="embed-body">`;
-
-  // Content + thumbnail row
-  html += '<div class="embed-content-row"><div class="embed-content">';
+  let html = '<article class="dc-embed" style="border-color:' + color + '">';
+  html += '<div class="dc-embed-grid">';
 
   // Author
   if (data.author.name) {
-    html += '<div class="embed-author">';
-    if (data.author.iconURL) html += `<img src="${escapeAttr(data.author.iconURL)}" alt="">`;
-    if (data.author.url) html += `<a href="${escapeAttr(data.author.url)}" target="_blank">${escapeHtml(data.author.name)}</a>`;
-    else html += escapeHtml(data.author.name);
+    html += '<div class="dc-embed-author">';
+    if (data.author.iconURL) html += '<img class="dc-embed-author-icon" src="' + escAttr(data.author.iconURL) + '" alt="">';
+    if (data.author.url) {
+      html += '<a class="dc-embed-author-name" href="' + escAttr(data.author.url) + '" target="_blank">' + esc(data.author.name) + '</a>';
+    } else {
+      html += '<span class="dc-embed-author-name">' + esc(data.author.name) + '</span>';
+    }
     html += '</div>';
   }
 
   // Title
   if (data.title) {
-    html += '<div class="embed-title">';
-    if (data.url) html += `<a href="${escapeAttr(data.url)}" target="_blank">${escapeHtml(data.title)}</a>`;
-    else html += escapeHtml(data.title);
+    html += '<div class="dc-embed-title">';
+    if (data.url) html += '<a href="' + escAttr(data.url) + '" target="_blank">' + esc(data.title) + '</a>';
+    else html += esc(data.title);
     html += '</div>';
   }
 
   // Description
   if (data.description) {
-    html += `<div class="embed-description">${renderMarkdown(data.description)}</div>`;
+    html += '<div class="dc-embed-description">' + renderMarkdown(data.description) + '</div>';
   }
 
-  // Fields
+  // Fields - use Discord's inline grouping algorithm
   if (data.fields.length > 0) {
-    html += '<div class="embed-fields">';
-    for (const f of data.fields) {
-      const cls = f.inline ? 'embed-field' : 'embed-field full-width';
-      html += `<div class="${cls}"><div class="embed-field-name">${escapeHtml(f.name || '\u200b')}</div><div class="embed-field-value">${renderMarkdown(f.value || '\u200b')}</div></div>`;
-    }
-    html += '</div>';
+    html += renderFieldsGrid(data.fields);
   }
 
-  html += '</div>'; // end embed-content
-
-  // Thumbnail
+  // Thumbnail (positioned by grid, rendered here for source order)
   if (data.thumbnail) {
-    html += `<img class="embed-thumbnail" src="${escapeAttr(data.thumbnail)}" alt="">`;
+    html += '<div class="dc-embed-thumbnail"><img src="' + escAttr(data.thumbnail) + '" alt=""></div>';
   }
-
-  html += '</div>'; // end embed-content-row
 
   // Image
   if (data.image) {
-    html += `<img class="embed-image" src="${escapeAttr(data.image)}" alt="">`;
+    html += '<div class="dc-embed-image"><img src="' + escAttr(data.image) + '" alt=""></div>';
   }
 
   // Footer
   if (data.footer.text || data.timestamp) {
-    html += '<div class="embed-footer">';
-    if (data.footer.iconURL) html += `<img src="${escapeAttr(data.footer.iconURL)}" alt="">`;
+    html += '<div class="dc-embed-footer">';
+    if (data.footer.iconURL) html += '<img class="dc-embed-footer-icon" src="' + escAttr(data.footer.iconURL) + '" alt="">';
+    html += '<span class="dc-embed-footer-text">';
     const parts = [];
-    if (data.footer.text) parts.push(escapeHtml(data.footer.text));
-    if (data.timestamp) parts.push(new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }));
-    html += parts.join(' • ');
-    html += '</div>';
+    if (data.footer.text) parts.push(esc(data.footer.text));
+    if (data.timestamp) {
+      const now = new Date();
+      const timeStr = 'Today at ' + now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+      parts.push(timeStr);
+    }
+    html += parts.join(' <span class="dc-embed-footer-sep">\u2022</span> ');
+    html += '</span></div>';
   }
 
-  html += '</div></div>'; // end embed-body, embed-preview
+  html += '</div></article>';
   preview.innerHTML = html;
 }
+
+/**
+ * Discord's field layout algorithm:
+ * - Non-inline fields take a full row
+ * - Consecutive inline fields are grouped into rows of up to 3
+ * - Each inline field in a row gets equal width (1/n of the row)
+ */
+function renderFieldsGrid(fieldList) {
+  let html = '<div class="dc-embed-fields">';
+  let i = 0;
+
+  while (i < fieldList.length) {
+    const f = fieldList[i];
+    if (!f.inline) {
+      // Full-width field
+      html += '<div class="dc-embed-field dc-field-full">';
+      html += '<div class="dc-embed-field-name">' + esc(f.name || '\u200b') + '</div>';
+      html += '<div class="dc-embed-field-value">' + renderMarkdown(f.value || '\u200b') + '</div>';
+      html += '</div>';
+      i++;
+    } else {
+      // Collect consecutive inline fields (max 3 per row)
+      const row = [];
+      while (i < fieldList.length && fieldList[i].inline && row.length < 3) {
+        row.push(fieldList[i]);
+        i++;
+      }
+      const colClass = row.length === 1 ? 'dc-field-col-1' : row.length === 2 ? 'dc-field-col-2' : 'dc-field-col-3';
+      html += '<div class="dc-embed-field-row">';
+      for (const rf of row) {
+        html += '<div class="dc-embed-field ' + colClass + '">';
+        html += '<div class="dc-embed-field-name">' + esc(rf.name || '\u200b') + '</div>';
+        html += '<div class="dc-embed-field-value">' + renderMarkdown(rf.value || '\u200b') + '</div>';
+        html += '</div>';
+      }
+      html += '</div>';
+    }
+  }
+
+  html += '</div>';
+  return html;
+}
+
+/**
+ * Discord markdown renderer
+ * Order matters: code blocks first (to protect content), then inline formatting
+ */
+function renderMarkdown(text) {
+  // Escape HTML first
+  let html = esc(text);
+
+  // Multi-line code blocks: ```lang\ncode\n```
+  html = html.replace(/```(?:\w*)\n([\s\S]*?)```/g,
+    '<pre class="dc-codeblock"><code>$1</code></pre>');
+  // Inline code blocks without language
+  html = html.replace(/```([\s\S]*?)```/g,
+    '<pre class="dc-codeblock"><code>$1</code></pre>');
+
+  // Inline code (protect from further processing)
+  const codeTokens = [];
+  html = html.replace(/`([^`\n]+)`/g, (_, code) => {
+    const token = '\x00CODE' + codeTokens.length + '\x00';
+    codeTokens.push('<code class="dc-inline-code">' + code + '</code>');
+    return token;
+  });
+
+  // Spoilers
+  html = html.replace(/\|\|(.+?)\|\|/g, '<span class="dc-spoiler">$1</span>');
+
+  // Masked links [text](url)
+  html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" class="dc-link" target="_blank">$1</a>');
+
+  // Bold italic: ***text***
+  html = html.replace(/\*\*\*(.+?)\*\*\*/gs, '<strong><em>$1</em></strong>');
+  // Bold: **text**
+  html = html.replace(/\*\*(.+?)\*\*/gs, '<strong>$1</strong>');
+  // Italic: *text*
+  html = html.replace(/\*(.+?)\*/gs, '<em>$1</em>');
+  // Underline bold italic: ___text___
+  html = html.replace(/___(.+?)___/gs, '<u><strong><em>$1</em></strong></u>');
+  // Underline bold: __**text**__
+  html = html.replace(/__\*\*(.+?)\*\*__/gs, '<u><strong>$1</strong></u>');
+  // Underline: __text__
+  html = html.replace(/__(.+?)__/gs, '<u>$1</u>');
+  // Strikethrough: ~~text~~
+  html = html.replace(/~~(.+?)~~/gs, '<s>$1</s>');
+
+  // Blockquotes: > text (at start of line)
+  html = html.replace(/(^|\n)&gt; (.+)/g, '$1<div class="dc-blockquote">$2</div>');
+
+  // Restore code tokens
+  for (let i = 0; i < codeTokens.length; i++) {
+    html = html.replace('\x00CODE' + i + '\x00', codeTokens[i]);
+  }
+
+  // Line breaks
+  html = html.replace(/\n/g, '<br>');
+
+  return html;
+}
+
+// ── Send embed ──
 
 async function sendEmbed() {
   const channelId = val('eb-channel');
@@ -318,32 +651,17 @@ function val(id) {
   return el ? el.value.trim() : '';
 }
 
-function escapeHtml(str) {
+function setVal(id, value) {
+  const el = document.getElementById(id);
+  if (el) el.value = value;
+}
+
+function esc(str) {
   const d = document.createElement('div');
   d.textContent = str;
   return d.innerHTML;
 }
 
-function escapeAttr(str) {
-  return str.replace(/"/g, '&quot;').replace(/'/g, '&#39;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-}
-
-/**
- * Render Discord-lite markdown: bold, italic, underline, strikethrough, inline code
- */
-function renderMarkdown(text) {
-  let html = escapeHtml(text);
-  // inline code
-  html = html.replace(/`([^`]+)`/g, '<code style="background:#1e1f22;padding:1px 4px;border-radius:3px;font-size:13px">$1</code>');
-  // bold + italic
-  html = html.replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>');
-  // bold
-  html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-  // italic
-  html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
-  // underline
-  html = html.replace(/__(.+?)__/g, '<u>$1</u>');
-  // strikethrough
-  html = html.replace(/~~(.+?)~~/g, '<s>$1</s>');
-  return html;
+function escAttr(str) {
+  return str.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/'/g, '&#39;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
