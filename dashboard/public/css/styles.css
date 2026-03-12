@@ -67,7 +67,7 @@ label{display:block;margin-bottom:4px;font-size:13px;font-weight:500;color:var(-
 .login-card{background:var(--bg-main);padding:40px;border-radius:var(--radius);width:380px;text-align:center}
 .login-logo{
   display:flex;align-items:center;justify-content:center;gap:12px;
-  font-family:'Orbitron',sans-serif;font-size:28px;font-weight:700;
+  font-family:'Orbitron',sans-serif;font-size:25px;font-weight:700;
   color:var(--text-primary);margin-bottom:4px;letter-spacing:1px;white-space:nowrap;
 }
 .login-logo-icon{width:48px;height:48px;object-fit:contain}
@@ -138,6 +138,32 @@ label{display:block;margin-bottom:4px;font-size:13px;font-weight:500;color:var(-
 .field-entry{display:flex;gap:8px;align-items:center;margin-bottom:8px;background:var(--bg-dark);padding:8px;border-radius:var(--radius-sm)}
 .field-entry input{flex:1}
 .field-entry label{display:flex;align-items:center;gap:4px;font-size:12px;white-space:nowrap;margin-bottom:0}
+
+/* File upload zone */
+.file-drop-zone{
+  border:2px dashed var(--border);border-radius:var(--radius-sm);
+  padding:20px;text-align:center;color:var(--text-muted);font-size:13px;
+  cursor:pointer;transition:border-color .15s,background .15s;
+}
+.file-drop-zone:hover,.file-drop-zone.drag-over{
+  border-color:var(--accent);background:var(--accent-dim);
+}
+.file-list{margin-top:8px}
+.file-item{
+  display:flex;align-items:center;gap:8px;padding:6px 8px;
+  background:var(--bg-dark);border-radius:var(--radius-sm);margin-bottom:4px;
+  font-size:13px;
+}
+.file-item img{width:40px;height:40px;object-fit:cover;border-radius:var(--radius-sm)}
+.file-item .file-info{flex:1;min-width:0}
+.file-item .file-name{color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.file-item .file-size{color:var(--text-muted);font-size:11px}
+
+/* Mention picker */
+.mention-row{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+.mention-row select{flex:1}
+.mention-row .btn{flex-shrink:0}
+.mention-search{margin-bottom:8px}
 
 /* ============ Embed Builder ============ */
 .flex-wrap{flex-wrap:wrap}

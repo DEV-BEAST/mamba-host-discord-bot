@@ -7,6 +7,11 @@ const PRESET_COLORS = [
 ];
 
 let fields = [];
+let attachments = []; // { name, size, type, data (base64), previewUrl }
+let lastFocusedInput = null; // track last focused text input/textarea for mention insertion
+let mentionMembers = [];
+let mentionRoles = [];
+let mentionChannels = [];
 
 export function render(container) {
   container.innerHTML = `
@@ -51,6 +56,26 @@ export function render(container) {
           </div>
         </div>
 
+        <div class="card" id="eb-mentions-card" style="display:none">
+          <div class="card-title">Mentions <small class="text-muted">(click Insert to add at cursor)</small></div>
+          <div class="mention-row">
+            <label style="white-space:nowrap;margin-bottom:0;min-width:55px">@User</label>
+            <input type="text" id="eb-member-search" placeholder="Search members..." class="mention-search" style="margin-bottom:0">
+            <select id="eb-mention-user"><option value="">Select user...</option></select>
+            <button class="btn btn-secondary btn-sm" id="eb-insert-user">Insert</button>
+          </div>
+          <div class="mention-row">
+            <label style="white-space:nowrap;margin-bottom:0;min-width:55px">@Role</label>
+            <select id="eb-mention-role"><option value="">Select role...</option></select>
+            <button class="btn btn-secondary btn-sm" id="eb-insert-role">Insert</button>
+          </div>
+          <div class="mention-row">
+            <label style="white-space:nowrap;margin-bottom:0;min-width:55px">#Channel</label>
+            <select id="eb-mention-channel"><option value="">Select channel...</option></select>
+            <button class="btn btn-secondary btn-sm" id="eb-insert-channel">Insert</button>
+          </div>
+        </div>
+
         <div class="card">
           <div class="card-title">Fields <small class="text-muted">(max 25)</small></div>
           <div id="eb-fields-list"></div>
@@ -61,6 +86,15 @@ export function render(container) {
           <div class="card-title">Images</div>
           <div class="form-group"><label>Thumbnail URL</label><input type="url" id="eb-thumbnail" placeholder="https://..."></div>
           <div class="form-group"><label>Image URL</label><input type="url" id="eb-image" placeholder="https://..."></div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Files & Attachments</div>
+          <div class="file-drop-zone" id="eb-drop-zone">
+            Drop files here or click to browse
+            <input type="file" id="eb-attach-input" multiple class="hidden">
+          </div>
+          <div class="file-list" id="eb-file-list"></div>
         </div>
 
         <div class="card">
@@ -76,6 +110,18 @@ export function render(container) {
 
         <button class="btn btn-primary" id="eb-send" style="width:100%;padding:12px">Send Embed</button>
         <div id="eb-status"></div>
+
+        <div class="card mt-16">
+          <div class="card-title">Extract from Discord</div>
+          <div class="form-group">
+            <label>Message Link</label>
+            <div class="field-row">
+              <input type="url" id="eb-msg-link" placeholder="https://discord.com/channels/guild/channel/message">
+              <button class="btn btn-secondary btn-sm" id="eb-extract-msg">Load</button>
+            </div>
+          </div>
+          <div id="eb-extract-status"></div>
+        </div>
 
         <div class="card mt-16">
           <div class="card-title">JSON Export / Import</div>
@@ -99,6 +145,11 @@ export function render(container) {
   `;
 
   fields = [];
+  attachments = [];
+  lastFocusedInput = null;
+  mentionMembers = [];
+  mentionRoles = [];
+  mentionChannels = [];
   loadGuilds();
   bindEvents();
   updatePreview();
@@ -130,10 +181,63 @@ async function loadChannels(guildId) {
   }
 }
 
+async function loadMentionData(guildId) {
+  const mentionsCard = document.getElementById('eb-mentions-card');
+  if (!guildId) {
+    mentionsCard.style.display = 'none';
+    return;
+  }
+  mentionsCard.style.display = '';
+
+  try {
+    const [members, roles, channelData] = await Promise.all([
+      get(`/api/guilds/${guildId}/members`),
+      get(`/api/guilds/${guildId}/roles`),
+      get(`/api/guilds/${guildId}/channels`),
+    ]);
+
+    mentionMembers = members;
+    mentionRoles = roles;
+    mentionChannels = channelData.channels;
+
+    renderMemberOptions(members);
+
+    document.getElementById('eb-mention-role').innerHTML = '<option value="">Select role...</option>' +
+      roles.map(r => `<option value="${r.id}" style="color:${r.color !== '#000000' ? r.color : 'inherit'}">${esc(r.name)}</option>`).join('');
+
+    document.getElementById('eb-mention-channel').innerHTML = '<option value="">Select channel...</option>' +
+      mentionChannels.map(c => `<option value="${c.id}">#${esc(c.name)}${c.category ? ` (${esc(c.category)})` : ''}</option>`).join('');
+  } catch (err) {
+    console.error('Failed to load mention data:', err);
+  }
+}
+
+function renderMemberOptions(members) {
+  document.getElementById('eb-mention-user').innerHTML = '<option value="">Select user...</option>' +
+    members.map(m => `<option value="${m.id}">${esc(m.displayName)} (${esc(m.username)})</option>`).join('');
+}
+
+async function searchMembers(query) {
+  const guildId = val('eb-guild');
+  if (!guildId) return;
+  try {
+    const members = await get(`/api/guilds/${guildId}/members?search=${encodeURIComponent(query)}`);
+    mentionMembers = members;
+    renderMemberOptions(members);
+  } catch (err) {
+    console.error('Failed to search members:', err);
+  }
+}
+
 // ── Events ──
 
 function bindEvents() {
-  document.getElementById('eb-guild').addEventListener('change', e => loadChannels(e.target.value));
+  // Guild change → load channels + mention data
+  document.getElementById('eb-guild').addEventListener('change', e => {
+    const guildId = e.target.value;
+    loadChannels(guildId);
+    loadMentionData(guildId);
+  });
 
   // Color swatches
   document.querySelectorAll('.color-swatch').forEach(sw => {
@@ -158,6 +262,13 @@ function bindEvents() {
   form.addEventListener('input', updatePreview);
   form.addEventListener('change', updatePreview);
 
+  // Track last focused text input/textarea for mention insertion
+  form.addEventListener('focusin', (e) => {
+    if (e.target.tagName === 'TEXTAREA' || (e.target.tagName === 'INPUT' && e.target.type === 'text')) {
+      lastFocusedInput = e.target;
+    }
+  });
+
   // Send
   document.getElementById('eb-send').addEventListener('click', sendEmbed);
 
@@ -165,6 +276,141 @@ function bindEvents() {
   document.getElementById('eb-export-json').addEventListener('click', exportJSON);
   document.getElementById('eb-import-json').addEventListener('click', () => document.getElementById('eb-file-input').click());
   document.getElementById('eb-file-input').addEventListener('change', handleFileImport);
+
+  // Extract from Discord message link
+  document.getElementById('eb-extract-msg').addEventListener('click', extractFromLink);
+
+  // Mention insertion
+  document.getElementById('eb-insert-user').addEventListener('click', () => {
+    const id = val('eb-mention-user');
+    if (id) insertAtCursor(`<@${id}>`);
+  });
+  document.getElementById('eb-insert-role').addEventListener('click', () => {
+    const id = val('eb-mention-role');
+    if (id) insertAtCursor(`<@&${id}>`);
+  });
+  document.getElementById('eb-insert-channel').addEventListener('click', () => {
+    const id = val('eb-mention-channel');
+    if (id) insertAtCursor(`<#${id}>`);
+  });
+
+  // Member search with debounce
+  let searchTimeout;
+  document.getElementById('eb-member-search').addEventListener('input', (e) => {
+    clearTimeout(searchTimeout);
+    const query = e.target.value.trim();
+    if (query.length >= 1) {
+      searchTimeout = setTimeout(() => searchMembers(query), 300);
+    } else if (query === '') {
+      // Reset to full list
+      const guildId = val('eb-guild');
+      if (guildId) searchMembers('');
+    }
+  });
+
+  // File attachments
+  const dropZone = document.getElementById('eb-drop-zone');
+  const attachInput = document.getElementById('eb-attach-input');
+
+  dropZone.addEventListener('click', () => attachInput.click());
+  dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+  dropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropZone.classList.remove('drag-over');
+    handleAttachFiles(e.dataTransfer.files);
+  });
+  attachInput.addEventListener('change', (e) => {
+    handleAttachFiles(e.target.files);
+    e.target.value = '';
+  });
+}
+
+// ── Mention insertion ──
+
+function insertAtCursor(text) {
+  const el = lastFocusedInput || document.getElementById('eb-description');
+  if (!el) return;
+
+  const start = el.selectionStart;
+  const end = el.selectionEnd;
+  const before = el.value.substring(0, start);
+  const after = el.value.substring(end);
+  el.value = before + text + after;
+
+  // Set cursor position after inserted text
+  const newPos = start + text.length;
+  el.setSelectionRange(newPos, newPos);
+  el.focus();
+
+  // Update preview
+  updatePreview();
+}
+
+// ── File attachments ──
+
+function handleAttachFiles(fileList) {
+  const MAX_SIZE = 25 * 1024 * 1024; // 25MB Discord limit
+
+  for (const file of fileList) {
+    // Check total size
+    const currentTotal = attachments.reduce((sum, a) => sum + a.size, 0);
+    if (currentTotal + file.size > MAX_SIZE) {
+      showStatus(document.getElementById('eb-status'), `File "${file.name}" skipped: total attachments would exceed 25MB`, 'error');
+      continue;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      // ev.target.result is a data URL like "data:image/png;base64,..."
+      const dataUrl = ev.target.result;
+      const base64 = dataUrl.split(',')[1];
+      const isImage = file.type.startsWith('image/');
+
+      attachments.push({
+        name: file.name,
+        size: file.size,
+        type: file.type,
+        data: base64,
+        previewUrl: isImage ? dataUrl : null,
+      });
+
+      renderAttachments();
+    };
+    reader.readAsDataURL(file);
+  }
+}
+
+function renderAttachments() {
+  const list = document.getElementById('eb-file-list');
+  if (attachments.length === 0) {
+    list.innerHTML = '';
+    return;
+  }
+
+  list.innerHTML = attachments.map((att, i) => `
+    <div class="file-item">
+      ${att.previewUrl ? `<img src="${att.previewUrl}" alt="">` : ''}
+      <div class="file-info">
+        <div class="file-name">${esc(att.name)}</div>
+        <div class="file-size">${formatSize(att.size)}</div>
+      </div>
+      <button class="btn btn-danger btn-sm" data-remove-attach="${i}">&times;</button>
+    </div>
+  `).join('');
+
+  list.querySelectorAll('[data-remove-attach]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      attachments.splice(parseInt(btn.dataset.removeAttach), 1);
+      renderAttachments();
+    });
+  });
+}
+
+function formatSize(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
 }
 
 // ── Import / Export ──
@@ -192,35 +438,44 @@ function getEmbedData() {
 }
 
 function populateFromData(data) {
-  document.getElementById('eb-author-name').value = data.author?.name || '';
-  document.getElementById('eb-author-icon').value = data.author?.iconURL || data.author?.icon_url || '';
-  document.getElementById('eb-author-url').value = data.author?.url || '';
-  document.getElementById('eb-title').value = data.title || '';
-  document.getElementById('eb-url').value = data.url || '';
-  document.getElementById('eb-description').value = data.description || '';
+  const set = (id, v) => {
+    const el = document.getElementById(id);
+    if (el) el.value = v || '';
+  };
 
-  if (data.color !== undefined && data.color !== null) {
-    const hex = typeof data.color === 'number'
+  set('eb-author-name', data.author?.name);
+  set('eb-author-icon', data.author?.iconURL || data.author?.icon_url);
+  set('eb-author-url', data.author?.url);
+  set('eb-title', data.title);
+  set('eb-url', data.url);
+  set('eb-description', data.description);
+
+  // Color: input[type=color] requires #rrggbb format
+  if (data.color != null) {
+    let hex = typeof data.color === 'number'
       ? '#' + data.color.toString(16).padStart(6, '0')
-      : data.color;
-    document.getElementById('eb-color').value = hex;
-  }
-
-  document.getElementById('eb-thumbnail').value = (typeof data.thumbnail === 'object' ? data.thumbnail?.url : data.thumbnail) || '';
-  document.getElementById('eb-image').value = (typeof data.image === 'object' ? data.image?.url : data.image) || '';
-  document.getElementById('eb-footer-text').value = data.footer?.text || '';
-  document.getElementById('eb-footer-icon').value = data.footer?.iconURL || data.footer?.icon_url || '';
-  document.getElementById('eb-timestamp').checked = !!data.timestamp;
-
-  fields = [];
-  if (data.fields && Array.isArray(data.fields)) {
-    for (const f of data.fields) {
-      fields.push({ name: f.name || '', value: f.value || '', inline: !!f.inline });
+      : String(data.color);
+    if (/^#[0-9a-fA-F]{6}$/.test(hex)) {
+      set('eb-color', hex);
     }
   }
+
+  set('eb-thumbnail', typeof data.thumbnail === 'object' ? data.thumbnail?.url : data.thumbnail);
+  set('eb-image', typeof data.image === 'object' ? data.image?.url : data.image);
+  set('eb-footer-text', data.footer?.text);
+  set('eb-footer-icon', data.footer?.iconURL || data.footer?.icon_url);
+
+  const ts = document.getElementById('eb-timestamp');
+  if (ts) ts.checked = !!data.timestamp;
+
+  // Rebuild fields array and re-render
+  fields = (data.fields || []).map(f => ({
+    name: f.name || '',
+    value: f.value || '',
+    inline: !!f.inline,
+  }));
   renderFields();
-  // Defer preview update to ensure DOM has settled
-  setTimeout(() => updatePreview(), 0);
+  updatePreview();
 }
 
 function exportJSON() {
@@ -271,6 +526,49 @@ function handleFileImport(e) {
     }
   };
   reader.readAsText(file);
+}
+
+async function extractFromLink() {
+  const linkInput = document.getElementById('eb-msg-link');
+  const statusEl = document.getElementById('eb-extract-status');
+  const url = linkInput.value.trim();
+
+  if (!url) {
+    showStatus(statusEl, 'Please paste a Discord message link', 'error');
+    return;
+  }
+
+  // Parse: https://discord.com/channels/{guildId}/{channelId}/{messageId}
+  const match = url.match(/channels\/(\d+)\/(\d+)\/(\d+)/);
+  if (!match) {
+    showStatus(statusEl, 'Invalid Discord message link format', 'error');
+    return;
+  }
+
+  const [, guildId, channelId, messageId] = match;
+  const btn = document.getElementById('eb-extract-msg');
+  btn.disabled = true;
+
+  try {
+    const data = await get(`/api/embed/extract?guildId=${guildId}&channelId=${channelId}&messageId=${messageId}`);
+    populateFromData(data);
+
+    // Also select the guild/channel in the dropdowns
+    const guildSelect = document.getElementById('eb-guild');
+    if (guildSelect) {
+      guildSelect.value = guildId;
+      await loadChannels(guildId);
+      await loadMentionData(guildId);
+      const channelSelect = document.getElementById('eb-channel');
+      if (channelSelect) channelSelect.value = channelId;
+    }
+
+    showStatus(statusEl, 'Embed extracted successfully');
+  } catch (err) {
+    showStatus(statusEl, err.message || 'Failed to extract embed', 'error');
+  } finally {
+    btn.disabled = false;
+  }
 }
 
 // ── Field management ──
@@ -501,7 +799,17 @@ async function sendEmbed() {
   btn.disabled = true;
 
   try {
-    await post('/api/embed/send', { channelId, ...data });
+    const payload = { channelId, ...data };
+
+    // Include file attachments as base64
+    if (attachments.length > 0) {
+      payload.attachments = attachments.map(a => ({
+        name: a.name,
+        data: a.data,
+      }));
+    }
+
+    await post('/api/embed/send', payload);
     showStatus(statusEl, 'Embed sent successfully!');
   } catch (err) {
     showStatus(statusEl, err.message, 'error');
@@ -515,11 +823,6 @@ async function sendEmbed() {
 function val(id) {
   const el = document.getElementById(id);
   return el ? el.value.trim() : '';
-}
-
-function setVal(id, value) {
-  const el = document.getElementById(id);
-  if (el) el.value = value;
 }
 
 function esc(str) {

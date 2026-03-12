@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { EmbedBuilder } from 'discord.js';
+import { EmbedBuilder, AttachmentBuilder } from 'discord.js';
 
 export function createEmbedRouter() {
   const router = Router();
@@ -19,6 +19,7 @@ export function createEmbedRouter() {
       image,
       footer,
       timestamp,
+      attachments,
     } = req.body;
 
     if (!channelId) {
@@ -70,10 +71,72 @@ export function createEmbedRouter() {
 
       if (timestamp) embed.setTimestamp();
 
-      await channel.send({ embeds: [embed] });
+      // Build message payload
+      const messagePayload = { embeds: [embed] };
+
+      // Handle file attachments (base64 encoded)
+      if (attachments && attachments.length > 0) {
+        messagePayload.files = attachments.map(att => {
+          const buffer = Buffer.from(att.data, 'base64');
+          return new AttachmentBuilder(buffer, { name: att.name });
+        });
+      }
+
+      await channel.send(messagePayload);
       res.json({ success: true });
     } catch (error) {
       console.error('Error sending embed:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // GET /api/embed/extract?guildId=...&channelId=...&messageId=...
+  router.get('/extract', async (req, res) => {
+    const { client } = req.app.locals;
+    const { guildId, channelId, messageId } = req.query;
+
+    if (!guildId || !channelId || !messageId) {
+      return res.status(400).json({ error: 'guildId, channelId, and messageId are required' });
+    }
+
+    try {
+      const guild = client.guilds.cache.get(guildId);
+      if (!guild) return res.status(404).json({ error: 'Guild not found (bot may not be in this server)' });
+
+      const channel = guild.channels.cache.get(channelId);
+      if (!channel) return res.status(404).json({ error: 'Channel not found' });
+
+      const message = await channel.messages.fetch(messageId);
+      if (!message) return res.status(404).json({ error: 'Message not found' });
+
+      const embed = message.embeds[0];
+      if (!embed) return res.status(404).json({ error: 'No embed found in this message' });
+
+      res.json({
+        author: embed.author ? {
+          name: embed.author.name || '',
+          iconURL: embed.author.iconURL || '',
+          url: embed.author.url || '',
+        } : undefined,
+        title: embed.title || '',
+        url: embed.url || '',
+        description: embed.description || '',
+        color: embed.color || 0,
+        fields: (embed.fields || []).map(f => ({
+          name: f.name,
+          value: f.value,
+          inline: !!f.inline,
+        })),
+        thumbnail: embed.thumbnail?.url || '',
+        image: embed.image?.url || '',
+        footer: embed.footer ? {
+          text: embed.footer.text || '',
+          iconURL: embed.footer.iconURL || '',
+        } : undefined,
+        timestamp: !!embed.timestamp,
+      });
+    } catch (error) {
+      console.error('Error extracting embed:', error);
       res.status(500).json({ error: error.message });
     }
   });
