@@ -230,6 +230,20 @@
     }
 
     /* Buttons */
+    sl-button::part(base) {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
+    }
+    sl-button[size="medium"]::part(base) {
+      height: 38px;
+      padding: 0 16px;
+    }
+    sl-button[size="small"]::part(base) {
+      height: 30px;
+      padding: 0 12px;
+    }
     sl-button[variant="primary"]::part(base) {
       background: #FF6F00;
       border-color: #FF6F00;
