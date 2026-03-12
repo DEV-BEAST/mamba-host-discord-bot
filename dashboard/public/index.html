@@ -118,6 +118,9 @@
       --sl-input-background-color: #1e1f22;
       --sl-input-background-color-hover: #1e1f22;
       --sl-input-background-color-focus: #1e1f22;
+      --sl-input-filled-background-color: #1e1f22;
+      --sl-input-filled-background-color-hover: #1e1f22;
+      --sl-input-filled-background-color-focus: #1e1f22;
       --sl-input-border-color: #3f4147;
       --sl-input-border-color-hover: #4e5058;
       --sl-input-border-color-focus: #FF6F00;
@@ -164,6 +167,12 @@
     sl-input::part(input), sl-textarea::part(textarea) {
       color: #f2f3f5;
       padding: 0 14px;
+    }
+    sl-input::part(input):autofill,
+    sl-input::part(input):-webkit-autofill {
+      -webkit-box-shadow: 0 0 0 1000px #1e1f22 inset !important;
+      -webkit-text-fill-color: #f2f3f5 !important;
+      caret-color: #f2f3f5 !important;
     }
     sl-textarea::part(textarea) {
       padding: 10px 14px;
@@ -295,6 +304,31 @@
     body > sl-popup,
     body > sl-popup::part(popup) {
       z-index: 10000 !important;
+    }
+
+    /* Kill any gray outline/ring on cards */
+    .bg-card {
+      outline: none;
+      border: none;
+      -webkit-box-shadow: none;
+    }
+
+    /* Autofill override - prevent white background on autofilled inputs */
+    input:-webkit-autofill,
+    input:-webkit-autofill:hover,
+    input:-webkit-autofill:focus,
+    input:-webkit-autofill:active {
+      -webkit-box-shadow: 0 0 0 1000px #1e1f22 inset !important;
+      -webkit-text-fill-color: #f2f3f5 !important;
+      caret-color: #f2f3f5 !important;
+      transition: background-color 5000s ease-in-out 0s;
+    }
+    sl-input input:-webkit-autofill,
+    sl-input input:-webkit-autofill:hover,
+    sl-input input:-webkit-autofill:focus {
+      -webkit-box-shadow: 0 0 0 1000px #1e1f22 inset !important;
+      -webkit-text-fill-color: #f2f3f5 !important;
+      caret-color: #f2f3f5 !important;
     }
 
     /* Spinner */
