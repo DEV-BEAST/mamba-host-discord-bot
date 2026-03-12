@@ -5,18 +5,22 @@ import { get, post } from './api.js';
 import { LoginScreen } from './components/LoginScreen.js';
 import { Layout } from './components/Layout.js';
 
-// Lazy-loaded page components
-const pageModules = {
-  'overview': () => import('./pages/overview.js'),
-  'embed-builder': () => import('./pages/embed-builder.js'),
-  'settings': () => import('./pages/settings.js'),
-  'leaderboard': () => import('./pages/leaderboard.js'),
+// Eager imports — no dynamic loading delay on navigation
+import Overview from './pages/overview.js';
+import EmbedBuilder from './pages/embed-builder.js';
+import Settings from './pages/settings.js';
+import Leaderboard from './pages/leaderboard.js';
+
+const pages = {
+  'overview': Overview,
+  'embed-builder': EmbedBuilder,
+  'settings': Settings,
+  'leaderboard': Leaderboard,
 };
 
 function App() {
   const [authed, setAuthed] = useState(null); // null = checking, true/false
   const [activePage, setActivePage] = useState('overview');
-  const [PageComponent, setPageComponent] = useState(null);
 
   // Check auth on mount
   useEffect(() => {
@@ -25,25 +29,6 @@ function App() {
       .catch(() => setAuthed(false));
   }, []);
 
-  // Load page component when activePage changes
-  const loadPage = useCallback(async (page) => {
-    if (!pageModules[page]) page = 'overview';
-    try {
-      const mod = await pageModules[page]();
-      setPageComponent(() => mod.default || mod.Page);
-    } catch (err) {
-      setPageComponent(() => () => html`
-        <div class="bg-card rounded-lg p-5">
-          <p class="text-destructive text-sm">Failed to load page: ${err.message}</p>
-        </div>
-      `);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (authed) loadPage(activePage);
-  }, [authed, activePage, loadPage]);
-
   // Hash-based routing
   useEffect(() => {
     const onHash = () => {
@@ -51,7 +36,6 @@ function App() {
       setActivePage(hash);
     };
     window.addEventListener('hashchange', onHash);
-    // Set initial hash
     const initial = window.location.hash.replace('#', '') || 'overview';
     setActivePage(initial);
     return () => window.removeEventListener('hashchange', onHash);
@@ -84,13 +68,15 @@ function App() {
     return html`<${LoginScreen} onLogin=${handleLogin} />`;
   }
 
+  const PageComponent = pages[activePage] || Overview;
+
   return html`
     <${Layout}
       activePage=${activePage}
       onNavigate=${navigate}
       onLogout=${handleLogout}
     >
-      ${PageComponent && html`<${PageComponent} />`}
+      <${PageComponent} />
     <//>
   `;
 }
