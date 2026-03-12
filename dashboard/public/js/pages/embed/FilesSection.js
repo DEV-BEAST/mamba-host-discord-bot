@@ -51,7 +51,7 @@ export function FilesSection({ attachments, onAttachmentsChange, onError }) {
   }, [onAttachmentsChange]);
 
   return html`
-    <div class="bg-card border border-border rounded-lg p-5 mb-4 shadow-card">
+    <div class="bg-card border border-accent/20 rounded-lg p-5 mb-4 shadow-card">
       <div class="text-[14px] font-semibold text-text-secondary uppercase tracking-wide mb-4">Files & Attachments</div>
       <div
         class="border-2 border-dashed rounded-sm p-5 text-center text-muted-foreground text-[13px] cursor-pointer transition-all duration-150
@@ -69,7 +69,7 @@ export function FilesSection({ attachments, onAttachmentsChange, onError }) {
       ${attachments.length > 0 && html`
         <div class="mt-2 space-y-1">
           ${attachments.map((att, i) => html`
-            <div class="flex items-center gap-2 p-2 bg-muted border border-border/50 rounded-sm text-[13px]">
+            <div class="flex items-center gap-2 p-2 bg-muted border border-accent/20/50 rounded-sm text-[13px]">
               ${att.previewUrl && html`<img src=${att.previewUrl} alt="" class="w-10 h-10 object-cover rounded-sm" />`}
               <div class="flex-1 min-w-0">
                 <div class="text-foreground truncate">${att.name}</div>

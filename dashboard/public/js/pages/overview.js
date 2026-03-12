@@ -14,7 +14,7 @@ function formatUptime(ms) {
 
 function StatCard({ label, value }) {
   return html`
-    <div class="bg-card border border-border rounded-lg p-5 shadow-card hover:shadow-card-hover transition-shadow duration-200">
+    <div class="bg-card border border-accent/20 rounded-lg p-5 shadow-card hover:shadow-card-hover transition-shadow duration-200">
       <div class="text-[28px] font-bold text-foreground leading-tight">${value}</div>
       <div class="text-[13px] text-muted-foreground mt-1">${label}</div>
     </div>

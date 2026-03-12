@@ -111,7 +111,7 @@ export function EmbedPreview({ embedData, attachments, botInfo }) {
 
   if (!hasEmbed && !hasAttachments) {
     return html`
-      <div class="bg-card border border-border rounded-lg p-5 shadow-card">
+      <div class="bg-card border border-accent/20 rounded-lg p-5 shadow-card">
         <div class="text-[14px] font-semibold text-text-secondary uppercase tracking-wide mb-4">Preview</div>
         <p class="text-muted-foreground text-sm">Start typing to see a preview...</p>
       </div>
@@ -204,7 +204,7 @@ export function EmbedPreview({ embedData, attachments, botInfo }) {
 
   return html`
     <div class="embed-preview-wrapper">
-      <div class="bg-card border border-border rounded-lg p-5 shadow-card">
+      <div class="bg-card border border-accent/20 rounded-lg p-5 shadow-card">
         <div class="text-[14px] font-semibold text-text-secondary uppercase tracking-wide mb-4">Preview</div>
         <div class="discord-message-wrapper" dangerouslySetInnerHTML=${{ __html: previewHtml }}></div>
       </div>

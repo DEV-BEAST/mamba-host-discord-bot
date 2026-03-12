@@ -47,7 +47,7 @@ export default function Leaderboard() {
       <p class="text-muted-foreground text-sm mt-0.5">XP rankings by server</p>
     </div>
 
-    <div class="bg-card border border-border rounded-lg p-5 shadow-card">
+    <div class="bg-card border border-accent/20 rounded-lg p-5 shadow-card">
       <div class="mb-4">
         <label class="block mb-1.5 text-[13px] font-medium text-text-secondary">Select Guild</label>
         <sl-select ref=${guildRef} value=${guildId} placeholder="Select a server..." size="medium" hoist>
