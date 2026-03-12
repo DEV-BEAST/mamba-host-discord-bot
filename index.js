@@ -85,8 +85,8 @@ client.once(Events.ClientReady, (c) => {
 
 // Auto-assign role on member join + welcome messages
 client.on(Events.GuildMemberAdd, async (member) => {
-  // Auto-role
-  if (botConfig.autoRoleId) {
+  // Auto-role — only if the role exists in this guild
+  if (botConfig.autoRoleId && member.guild.roles.cache.has(botConfig.autoRoleId)) {
     try {
       await member.roles.add(botConfig.autoRoleId);
       console.log(`✓ Auto-assigned role to ${member.user.tag}`);
