@@ -168,12 +168,6 @@
       color: #f2f3f5;
       padding: 0 14px;
     }
-    sl-input::part(input):autofill,
-    sl-input::part(input):-webkit-autofill {
-      -webkit-box-shadow: 0 0 0 1000px #1e1f22 inset !important;
-      -webkit-text-fill-color: #f2f3f5 !important;
-      caret-color: #f2f3f5 !important;
-    }
     sl-textarea::part(textarea) {
       padding: 10px 14px;
     }
@@ -306,29 +300,11 @@
       z-index: 10000 !important;
     }
 
-    /* Kill any gray outline/ring on cards */
+    /* Remove any outline/ring from cards — shadow-card handles depth */
     .bg-card {
-      outline: none;
-      border: none;
-      -webkit-box-shadow: none;
-    }
-
-    /* Autofill override - prevent white background on autofilled inputs */
-    input:-webkit-autofill,
-    input:-webkit-autofill:hover,
-    input:-webkit-autofill:focus,
-    input:-webkit-autofill:active {
-      -webkit-box-shadow: 0 0 0 1000px #1e1f22 inset !important;
-      -webkit-text-fill-color: #f2f3f5 !important;
-      caret-color: #f2f3f5 !important;
-      transition: background-color 5000s ease-in-out 0s;
-    }
-    sl-input input:-webkit-autofill,
-    sl-input input:-webkit-autofill:hover,
-    sl-input input:-webkit-autofill:focus {
-      -webkit-box-shadow: 0 0 0 1000px #1e1f22 inset !important;
-      -webkit-text-fill-color: #f2f3f5 !important;
-      caret-color: #f2f3f5 !important;
+      outline: none !important;
+      --tw-ring-shadow: 0 0 #0000 !important;
+      --tw-ring-offset-shadow: 0 0 #0000 !important;
     }
 
     /* Spinner */

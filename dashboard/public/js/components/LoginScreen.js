@@ -1,13 +1,35 @@
 import { html } from 'htm/preact';
-import { useState, useRef, useCallback } from 'preact/hooks';
+import { useState, useRef, useCallback, useEffect } from 'preact/hooks';
 import { post } from '../api.js';
 import { useShoelaceEvent } from '../hooks/useShoelace.js';
+
+const AUTOFILL_CSS = `
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus,
+  input:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 1000px #1e1f22 inset !important;
+    -webkit-text-fill-color: #f2f3f5 !important;
+    caret-color: #f2f3f5 !important;
+    transition: background-color 5000s ease-in-out 0s !important;
+  }
+`;
 
 export function LoginScreen({ onLogin }) {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const inputRef = useRef(null);
+
+  // Inject autofill styles into Shoelace shadow DOM
+  useEffect(() => {
+    const el = inputRef.current;
+    if (!el || !el.shadowRoot) return;
+    const style = document.createElement('style');
+    style.textContent = AUTOFILL_CSS;
+    el.shadowRoot.appendChild(style);
+    return () => style.remove();
+  }, []);
 
   useShoelaceEvent(inputRef, 'sl-input', useCallback((e) => {
     setPassword(e.target.value);
