@@ -63,7 +63,7 @@ function PresenceCard({ botInfo }) {
   const isStreaming = type === 'streaming' && name;
 
   return html`
-    <div class="bg-card border-0 rounded-lg p-5 shadow-card">
+    <div class="bg-card rounded-lg p-5 shadow-card">
       <div class="text-[14px] font-semibold text-text-secondary uppercase tracking-wide mb-4">Presence</div>
 
       <div class="mb-4">
@@ -173,7 +173,7 @@ function AutoRoleCard({ guilds }) {
   };
 
   return html`
-    <div class="bg-card border-0 rounded-lg p-5 shadow-card">
+    <div class="bg-card rounded-lg p-5 shadow-card">
       <div class="text-[14px] font-semibold text-text-secondary uppercase tracking-wide mb-4">Auto Role</div>
 
       <div class="mb-4">
@@ -270,7 +270,7 @@ function WelcomeCard({ guilds, botInfo }) {
   const timeStr = 'Today at ' + now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
 
   return html`
-    <div class="bg-card border-0 rounded-lg p-5 shadow-card">
+    <div class="bg-card rounded-lg p-5 shadow-card">
       <div class="text-[14px] font-semibold text-text-secondary uppercase tracking-wide mb-4">Welcome Message</div>
 
       <div class="mb-4">

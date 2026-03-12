@@ -57,7 +57,7 @@ export function MentionPicker({ guildId, channels, onInsert }) {
   if (!guildId) return null;
 
   return html`
-    <div class="bg-card border-0 rounded-lg p-5 mb-4 shadow-card">
+    <div class="bg-card rounded-lg p-5 mb-4 shadow-card">
       <div class="text-[14px] font-semibold text-text-secondary uppercase tracking-wide mb-4">
         Mentions <small class="text-muted-foreground font-normal normal-case">(click Insert to add at cursor)</small>
       </div>

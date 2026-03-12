@@ -97,7 +97,7 @@ export function JsonSection({ getEmbedData, populateFromData, onGuildSelect, onE
 
   return html`
     <div>
-      <div class="bg-card border-0 rounded-lg p-5 mb-4 shadow-card">
+      <div class="bg-card rounded-lg p-5 mb-4 shadow-card">
         <div class="text-[14px] font-semibold text-text-secondary uppercase tracking-wide mb-4">Extract from Discord</div>
         <div class="mb-2">
           <label class="block mb-1.5 text-[13px] font-medium text-text-secondary">Message Link</label>
@@ -109,7 +109,7 @@ export function JsonSection({ getEmbedData, populateFromData, onGuildSelect, onE
         <${StatusMessage} message=${extractMsg} type=${extractMsgType} onClear=${() => setExtractMsg(null)} />
       </div>
 
-      <div class="bg-card border-0 rounded-lg p-5 mb-4 shadow-card">
+      <div class="bg-card rounded-lg p-5 mb-4 shadow-card">
         <div class="text-[14px] font-semibold text-text-secondary uppercase tracking-wide mb-4">JSON Export / Import</div>
         <div class="flex gap-2 flex-wrap">
           <sl-button variant="default" size="small" onClick=${exportJSON}>Export JSON</sl-button>
