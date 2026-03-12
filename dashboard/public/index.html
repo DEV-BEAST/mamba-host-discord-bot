@@ -197,6 +197,20 @@
       background: rgba(255,111,0,0.15);
       color: #FF6F00;
     }
+    sl-option::part(checked-icon) {
+      color: #FF6F00;
+    }
+    /* Remove orange top bar from dropdown menu */
+    sl-select::part(listbox) {
+      border-top: none !important;
+      padding-top: 4px;
+    }
+    sl-select sl-popup::part(popup) {
+      border-top: none !important;
+    }
+    sl-select::part(form-control) {
+      border-top: none !important;
+    }
 
     /* Switch - proper toggle appearance */
     sl-switch {
