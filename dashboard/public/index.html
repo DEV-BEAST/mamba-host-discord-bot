@@ -91,6 +91,7 @@
     }
     a { color: #FF6F00; text-decoration: none; }
     a:hover { text-decoration: underline; }
+    nav a, nav a:hover { text-decoration: none; }
 
     /* Scrollbar styling */
     ::-webkit-scrollbar { width: 8px; }
@@ -126,6 +127,8 @@
       --sl-input-focus-ring-color: rgba(255, 111, 0, 0.33);
       --sl-input-border-radius-medium: 4px;
       --sl-input-border-radius-small: 4px;
+      --sl-input-height-medium: 40px;
+      --sl-input-height-small: 32px;
 
       --sl-panel-background-color: #313338;
       --sl-panel-border-color: #3f4147;
@@ -139,6 +142,9 @@
 
       --sl-spacing-small: 8px;
       --sl-spacing-medium: 12px;
+
+      --sl-input-spacing-small: 10px;
+      --sl-input-spacing-medium: 14px;
     }
 
     /* Input/select/textarea base */
@@ -158,6 +164,13 @@
     }
     sl-input::part(input), sl-textarea::part(textarea) {
       color: #f2f3f5;
+      padding: 0 14px;
+    }
+    sl-textarea::part(textarea) {
+      padding: 10px 14px;
+    }
+    sl-select::part(display-input) {
+      padding: 0 14px;
     }
     sl-input::part(input)::placeholder, sl-textarea::part(textarea)::placeholder {
       color: #6d6f78;
