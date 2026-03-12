@@ -40,6 +40,7 @@ export function createSettingsRouter() {
 
     // Apply to bot
     setCustomPresence(client, botConfig.presence);
+    botConfig.save();
 
     res.json({ success: true, presence: botConfig.presence });
   });
@@ -50,6 +51,7 @@ export function createSettingsRouter() {
     const { roleId } = req.body;
 
     botConfig.autoRoleId = roleId || null;
+    botConfig.save();
     res.json({ success: true, autoRoleId: botConfig.autoRoleId });
   });
 
@@ -62,6 +64,7 @@ export function createSettingsRouter() {
     if (channelId !== undefined) botConfig.welcome.channelId = channelId;
     if (guildId !== undefined) botConfig.welcome.guildId = guildId;
     if (message !== undefined) botConfig.welcome.message = message;
+    botConfig.save();
 
     res.json({ success: true, welcome: botConfig.welcome });
   });
