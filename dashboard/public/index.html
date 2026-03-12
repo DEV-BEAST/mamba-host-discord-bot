@@ -176,12 +176,25 @@
       color: #6d6f78;
     }
 
-    /* Select dropdown */
+    /* Select dropdown - ensure popups render above all content */
+    sl-select::part(popup) {
+      z-index: 10000;
+    }
+    sl-select::part(popup__content) {
+      z-index: 10000;
+    }
+    sl-select sl-popup::part(popup) {
+      z-index: 10000 !important;
+    }
+    sl-popup::part(popup) {
+      z-index: 10000 !important;
+    }
     sl-select::part(listbox) {
       background: #2b2d31;
       border: 1px solid #3f4147;
       border-radius: 6px;
       box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+      z-index: 10000;
     }
     sl-option::part(base) { color: #f2f3f5; }
     sl-option::part(base):hover { background: #383a40; }
@@ -190,10 +203,36 @@
       color: #FF6F00;
     }
 
-    /* Switch */
-    sl-switch { --width: 40px; --height: 22px; --thumb-size: 16px; }
-    sl-switch::part(control) { background: #404249; border: none; }
-    sl-switch[checked]::part(control) { background: #FF6F00; border: none; }
+    /* Switch - proper toggle appearance */
+    sl-switch {
+      --width: 44px;
+      --height: 24px;
+      --thumb-size: 18px;
+    }
+    sl-switch::part(control) {
+      background: #404249;
+      border: none;
+      border-radius: 12px;
+      transition: background 0.2s;
+    }
+    sl-switch::part(thumb) {
+      background: #fff;
+      border: none;
+      border-radius: 50%;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+      transition: transform 0.2s, background 0.2s;
+    }
+    sl-switch[checked]::part(control) {
+      background: #FF6F00;
+      border: none;
+    }
+    sl-switch[checked]::part(thumb) {
+      background: #fff;
+    }
+    sl-switch::part(label) {
+      color: #b5bac1;
+      font-size: 14px;
+    }
 
     /* Buttons */
     sl-button[variant="primary"]::part(base) {
@@ -248,6 +287,15 @@
     sl-color-picker::part(trigger) {
       border-color: #3f4147;
       border-radius: 4px;
+    }
+    sl-color-picker::part(base) {
+      z-index: 10000;
+    }
+
+    /* Hoisted popups (select dropdowns) - ensure they render above everything */
+    body > sl-popup,
+    body > sl-popup::part(popup) {
+      z-index: 10000 !important;
     }
 
     /* Spinner */
