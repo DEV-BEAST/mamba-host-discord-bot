@@ -167,9 +167,13 @@
     sl-input::part(base):hover, sl-select::part(combobox):hover, sl-textarea::part(base):hover {
       border-color: #4e5058;
     }
-    sl-input::part(base):focus-within, sl-select::part(combobox):focus-within, sl-textarea::part(base):focus-within {
+    sl-input::part(base):focus-within, sl-textarea::part(base):focus-within {
       border-color: #FF6F00;
       box-shadow: 0 0 0 3px rgba(255, 111, 0, 0.2);
+    }
+    sl-select::part(combobox):focus-within {
+      border-color: #4e5058;
+      box-shadow: none;
     }
     sl-input::part(input), sl-textarea::part(textarea) {
       color: #f2f3f5;
@@ -200,17 +204,6 @@
     }
     sl-option::part(checked-icon) {
       color: #FF6F00;
-    }
-    /* Remove orange top bar from dropdown menu */
-    sl-select::part(listbox) {
-      border-top: none !important;
-      padding-top: 4px;
-    }
-    sl-select sl-popup::part(popup) {
-      border-top: none !important;
-    }
-    sl-select::part(form-control) {
-      border-top: none !important;
     }
 
     /* Switch - proper toggle appearance */
