@@ -10,15 +10,15 @@ export function ImagesSection({ thumbnail, image, onThumbnailChange, onImageChan
   useShoelaceEvent(imageRef, 'sl-input', useCallback(e => onImageChange(e.target.value), [onImageChange]));
 
   return html`
-    <div class="bg-card rounded-lg p-5 mb-4">
-      <div class="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Images</div>
+    <div class="bg-card border border-border rounded-lg p-5 mb-4 shadow-card">
+      <div class="text-[14px] font-semibold text-text-secondary uppercase tracking-wide mb-4">Images</div>
       <div class="mb-4">
-        <label class="block mb-1 text-xs font-medium text-muted-foreground">Thumbnail URL</label>
-        <sl-input ref=${thumbRef} value=${thumbnail} type="url" placeholder="https://..." size="small"></sl-input>
+        <label class="block mb-1.5 text-[13px] font-medium text-text-secondary">Thumbnail URL</label>
+        <sl-input ref=${thumbRef} value=${thumbnail} type="url" placeholder="https://..." size="medium"></sl-input>
       </div>
       <div>
-        <label class="block mb-1 text-xs font-medium text-muted-foreground">Image URL</label>
-        <sl-input ref=${imageRef} value=${image} type="url" placeholder="https://..." size="small"></sl-input>
+        <label class="block mb-1.5 text-[13px] font-medium text-text-secondary">Image URL</label>
+        <sl-input ref=${imageRef} value=${image} type="url" placeholder="https://..." size="medium"></sl-input>
       </div>
     </div>
   `;

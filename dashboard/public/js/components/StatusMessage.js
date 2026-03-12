@@ -2,7 +2,7 @@ import { html } from 'htm/preact';
 import { useEffect } from 'preact/hooks';
 
 /**
- * Inline status message component.
+ * Inline status message — matches the subtle style of the original.
  * Success auto-hides after 4s, errors persist.
  */
 export function StatusMessage({ message, type = 'success', onClear }) {
@@ -15,11 +15,15 @@ export function StatusMessage({ message, type = 'success', onClear }) {
 
   if (!message) return null;
 
-  const variant = type === 'success' ? 'success' : 'danger';
+  const isSuccess = type === 'success';
 
   return html`
-    <sl-alert variant=${variant} open class="mt-2">
-      <span>${message}</span>
-    </sl-alert>
+    <div class="mt-2 py-2 px-3 rounded-sm text-[13px] ${
+      isSuccess
+        ? 'bg-[rgba(35,165,89,0.12)] text-success'
+        : 'bg-[rgba(242,63,67,0.12)] text-destructive'
+    }">
+      ${message}
+    </div>
   `;
 }

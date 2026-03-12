@@ -34,7 +34,6 @@ function PresenceCard({ botInfo }) {
   useShoelaceEvent(statusRef, 'sl-change', useCallback(e => setStatus(e.target.value), []));
   useShoelaceEvent(urlRef, 'sl-input', useCallback(e => setUrl(e.target.value), []));
 
-  // Expose a load function
   const load = useCallback((settings) => {
     setName(settings.presence.name || '');
     setType(settings.presence.type || 'playing');
@@ -43,10 +42,7 @@ function PresenceCard({ botInfo }) {
     setLoaded(true);
   }, []);
 
-  // Expose load to parent
-  useEffect(() => {
-    PresenceCard._load = load;
-  }, [load]);
+  useEffect(() => { PresenceCard._load = load; }, [load]);
 
   const save = async () => {
     setSaving(true);
@@ -67,16 +63,16 @@ function PresenceCard({ botInfo }) {
   const isStreaming = type === 'streaming' && name;
 
   return html`
-    <div class="bg-card rounded-lg p-5">
-      <div class="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Presence</div>
+    <div class="bg-card border border-border rounded-lg p-5 shadow-card">
+      <div class="text-[14px] font-semibold text-text-secondary uppercase tracking-wide mb-4">Presence</div>
 
       <div class="mb-4">
-        <label class="block mb-1 text-xs font-medium text-muted-foreground">Activity Text</label>
-        <sl-input ref=${nameRef} value=${name} placeholder="Playing something..." size="small"></sl-input>
+        <label class="block mb-1.5 text-[13px] font-medium text-text-secondary">Activity Text</label>
+        <sl-input ref=${nameRef} value=${name} placeholder="Playing something..." size="medium"></sl-input>
       </div>
       <div class="mb-4">
-        <label class="block mb-1 text-xs font-medium text-muted-foreground">Type</label>
-        <sl-select ref=${typeRef} value=${type} size="small" hoist>
+        <label class="block mb-1.5 text-[13px] font-medium text-text-secondary">Type</label>
+        <sl-select ref=${typeRef} value=${type} size="medium" hoist>
           <sl-option value="playing">Playing</sl-option>
           <sl-option value="watching">Watching</sl-option>
           <sl-option value="listening">Listening</sl-option>
@@ -85,20 +81,20 @@ function PresenceCard({ botInfo }) {
         </sl-select>
       </div>
       <div class="mb-4">
-        <label class="block mb-1 text-xs font-medium text-muted-foreground">Status</label>
-        <sl-select ref=${statusRef} value=${status} size="small" hoist>
+        <label class="block mb-1.5 text-[13px] font-medium text-text-secondary">Status</label>
+        <sl-select ref=${statusRef} value=${status} size="medium" hoist>
           <sl-option value="online">Online</sl-option>
           <sl-option value="idle">Idle</sl-option>
           <sl-option value="dnd">Do Not Disturb</sl-option>
           <sl-option value="invisible">Invisible</sl-option>
         </sl-select>
       </div>
-      <div class="mb-4">
-        <label class="block mb-1 text-xs font-medium text-muted-foreground">Streaming URL (required for Streaming type)</label>
-        <sl-input ref=${urlRef} value=${url} type="url" placeholder="https://twitch.tv/..." size="small"></sl-input>
+      <div class="mb-5">
+        <label class="block mb-1.5 text-[13px] font-medium text-text-secondary">Streaming URL (required for Streaming type)</label>
+        <sl-input ref=${urlRef} value=${url} type="url" placeholder="https://twitch.tv/..." size="medium"></sl-input>
       </div>
 
-      <sl-button variant="primary" size="small" loading=${saving} onClick=${save}>Save Presence</sl-button>
+      <sl-button variant="primary" size="medium" loading=${saving} onClick=${save}>Save Presence</sl-button>
 
       <${StatusMessage} message=${msg} type=${msgType} onClear=${() => setMsg(null)} />
 
@@ -138,7 +134,6 @@ function AutoRoleCard({ guilds }) {
   }, []));
   useShoelaceEvent(roleRef, 'sl-change', useCallback(e => setRoleId(e.target.value), []));
 
-  // Load roles for selected guild
   useEffect(() => {
     if (!guildId) { setRoles([]); return; }
     get('/api/guilds/' + guildId + '/roles')
@@ -146,7 +141,6 @@ function AutoRoleCard({ guilds }) {
       .catch(() => setRoles([]));
   }, [guildId]);
 
-  // Expose load
   const load = useCallback(async (settings, guildList) => {
     if (settings.autoRoleId) {
       for (const g of guildList) {
@@ -179,23 +173,23 @@ function AutoRoleCard({ guilds }) {
   };
 
   return html`
-    <div class="bg-card rounded-lg p-5">
-      <div class="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Auto Role</div>
+    <div class="bg-card border border-border rounded-lg p-5 shadow-card">
+      <div class="text-[14px] font-semibold text-text-secondary uppercase tracking-wide mb-4">Auto Role</div>
 
       <div class="mb-4">
-        <label class="block mb-1 text-xs font-medium text-muted-foreground">Guild</label>
-        <sl-select ref=${guildRef} value=${guildId} placeholder="Select a server..." size="small" hoist>
+        <label class="block mb-1.5 text-[13px] font-medium text-text-secondary">Guild</label>
+        <sl-select ref=${guildRef} value=${guildId} placeholder="Select a server..." size="medium" hoist>
           ${guilds.map(g => html`<sl-option value=${g.id}>${g.name}</sl-option>`)}
         </sl-select>
       </div>
-      <div class="mb-4">
-        <label class="block mb-1 text-xs font-medium text-muted-foreground">Role to assign on join</label>
-        <sl-select ref=${roleRef} value=${roleId} placeholder="Select a role..." size="small" hoist>
+      <div class="mb-5">
+        <label class="block mb-1.5 text-[13px] font-medium text-text-secondary">Role to assign on join</label>
+        <sl-select ref=${roleRef} value=${roleId} placeholder="Select a role..." size="medium" hoist>
           ${roles.map(r => html`<sl-option value=${r.id}>${r.name}</sl-option>`)}
         </sl-select>
       </div>
 
-      <sl-button variant="primary" size="small" loading=${saving} onClick=${save}>Save Auto-Role</sl-button>
+      <sl-button variant="primary" size="medium" loading=${saving} onClick=${save}>Save Auto-Role</sl-button>
       <${StatusMessage} message=${msg} type=${msgType} onClear=${() => setMsg(null)} />
     </div>
   `;
@@ -225,7 +219,6 @@ function WelcomeCard({ guilds, botInfo }) {
   useShoelaceEvent(channelRef, 'sl-change', useCallback(e => setChannelId(e.target.value), []));
   useShoelaceEvent(messageRef, 'sl-input', useCallback(e => setMessage(e.target.value), []));
 
-  // Load channels for guild
   useEffect(() => {
     if (!guildId) { setChannels([]); return; }
     get('/api/guilds/' + guildId + '/channels')
@@ -233,7 +226,6 @@ function WelcomeCard({ guilds, botInfo }) {
       .catch(() => setChannels([]));
   }, [guildId]);
 
-  // Expose load
   const load = useCallback(async (settings) => {
     setEnabled(settings.welcome.enabled);
     setMessage(settings.welcome.message || '');
@@ -268,7 +260,6 @@ function WelcomeCard({ guilds, botInfo }) {
     }
   };
 
-  // Preview
   const template = message || 'Welcome {user} to {server}!';
   const rendered = template
     .replace(/{user}/g, '<span class="dc-msg-mention">@ExampleUser</span>')
@@ -279,31 +270,31 @@ function WelcomeCard({ guilds, botInfo }) {
   const timeStr = 'Today at ' + now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
 
   return html`
-    <div class="bg-card rounded-lg p-5">
-      <div class="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Welcome Message</div>
+    <div class="bg-card border border-border rounded-lg p-5 shadow-card">
+      <div class="text-[14px] font-semibold text-text-secondary uppercase tracking-wide mb-4">Welcome Message</div>
 
       <div class="mb-4">
         <sl-switch ref=${enabledRef} .checked=${enabled}>Enable welcome messages</sl-switch>
       </div>
       <div class="mb-4">
-        <label class="block mb-1 text-xs font-medium text-muted-foreground">Guild</label>
-        <sl-select ref=${guildRef} value=${guildId} placeholder="Select a server..." size="small" hoist>
+        <label class="block mb-1.5 text-[13px] font-medium text-text-secondary">Guild</label>
+        <sl-select ref=${guildRef} value=${guildId} placeholder="Select a server..." size="medium" hoist>
           ${guilds.map(g => html`<sl-option value=${g.id}>${g.name}</sl-option>`)}
         </sl-select>
       </div>
       <div class="mb-4">
-        <label class="block mb-1 text-xs font-medium text-muted-foreground">Channel</label>
-        <sl-select ref=${channelRef} value=${channelId} placeholder="Select a channel..." size="small" hoist>
+        <label class="block mb-1.5 text-[13px] font-medium text-text-secondary">Channel</label>
+        <sl-select ref=${channelRef} value=${channelId} placeholder="Select a channel..." size="medium" hoist>
           ${channels.map(c => html`<sl-option value=${c.id}>#${c.name}</sl-option>`)}
         </sl-select>
       </div>
-      <div class="mb-4">
-        <label class="block mb-1 text-xs font-medium text-muted-foreground">Message Template</label>
-        <sl-textarea ref=${messageRef} value=${message} rows="3" placeholder="Welcome {user} to {server}!" size="small"></sl-textarea>
-        <small class="text-muted-foreground text-xs">Placeholders: {user} {server} {memberCount}</small>
+      <div class="mb-5">
+        <label class="block mb-1.5 text-[13px] font-medium text-text-secondary">Message Template</label>
+        <sl-textarea ref=${messageRef} value=${message} rows="3" placeholder="Welcome {user} to {server}!" size="medium"></sl-textarea>
+        <div class="text-muted-foreground text-[12px] mt-1">Placeholders: {user} {server} {memberCount}</div>
       </div>
 
-      <sl-button variant="primary" size="small" loading=${saving} onClick=${save}>Save Welcome</sl-button>
+      <sl-button variant="primary" size="medium" loading=${saving} onClick=${save}>Save Welcome</sl-button>
       <${StatusMessage} message=${msg} type=${msgType} onClear=${() => setMsg(null)} />
 
       <div class="welcome-preview">
@@ -336,7 +327,6 @@ export default function Settings() {
         setGuilds(guildList);
         if (settings.bot) setBotInfo(settings.bot);
 
-        // Load sub-components
         if (PresenceCard._load) PresenceCard._load(settings);
         if (AutoRoleCard._load) AutoRoleCard._load(settings, guildList);
         if (WelcomeCard._load) WelcomeCard._load(settings);
@@ -357,7 +347,7 @@ export default function Settings() {
 
     ${!loaded && html`
       <div class="flex justify-center py-12">
-        <sl-spinner style="font-size: 2rem; --indicator-color: #FF6F00;"></sl-spinner>
+        <sl-spinner style="font-size: 2rem;"></sl-spinner>
       </div>
     `}
 

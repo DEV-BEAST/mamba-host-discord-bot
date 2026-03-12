@@ -19,32 +19,32 @@ export function BodySection({ title, titleUrl, description, color, onTitleChange
   useShoelaceEvent(colorRef, 'sl-input', useCallback(e => onColorChange(e.target.value), [onColorChange]));
 
   return html`
-    <div class="bg-card rounded-lg p-5 mb-4">
-      <div class="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Body</div>
+    <div class="bg-card border border-border rounded-lg p-5 mb-4 shadow-card">
+      <div class="text-[14px] font-semibold text-text-secondary uppercase tracking-wide mb-4">Body</div>
       <div class="mb-4">
-        <label class="block mb-1 text-xs font-medium text-muted-foreground">Title</label>
-        <sl-input ref=${titleRef} value=${title} placeholder="Embed title" size="small"
+        <label class="block mb-1.5 text-[13px] font-medium text-text-secondary">Title</label>
+        <sl-input ref=${titleRef} value=${title} placeholder="Embed title" size="medium"
           onFocus=${onTextFocus}></sl-input>
       </div>
       <div class="mb-4">
-        <label class="block mb-1 text-xs font-medium text-muted-foreground">Title URL</label>
-        <sl-input ref=${urlRef} value=${titleUrl} type="url" placeholder="https://..." size="small"></sl-input>
+        <label class="block mb-1.5 text-[13px] font-medium text-text-secondary">Title URL</label>
+        <sl-input ref=${urlRef} value=${titleUrl} type="url" placeholder="https://..." size="medium"></sl-input>
       </div>
       <div class="mb-4">
-        <label class="block mb-1 text-xs font-medium text-muted-foreground">Description</label>
+        <label class="block mb-1.5 text-[13px] font-medium text-text-secondary">Description</label>
         <sl-textarea ref=${descRef} value=${description} rows="4"
           placeholder="Supports **bold**, *italic*, __underline__, ~~strikethrough~~, \`code\`, \`\`\`code blocks\`\`\`, > blockquotes, [links](url), and ||spoilers||"
-          size="small"
+          size="medium"
           onFocus=${onTextFocus}></sl-textarea>
       </div>
       <div>
-        <label class="block mb-1 text-xs font-medium text-muted-foreground">Color</label>
+        <label class="block mb-1.5 text-[13px] font-medium text-text-secondary">Color</label>
         <div class="flex items-center gap-3 flex-wrap">
           <sl-color-picker ref=${colorRef} value=${color} size="small" no-format-toggle format="hex"></sl-color-picker>
           ${PRESET_COLORS.map(c => html`
             <div
-              class="w-6 h-6 rounded-full cursor-pointer border-2 transition-colors duration-150 hover:border-foreground
-                ${color === c ? 'border-foreground' : 'border-transparent'}"
+              class="w-6 h-6 rounded-full cursor-pointer border-2 transition-all duration-150
+                ${color === c ? 'border-foreground scale-110' : 'border-transparent hover:border-muted-foreground'}"
               style="background:${c}"
               onClick=${() => onColorChange(c)}
             ></div>

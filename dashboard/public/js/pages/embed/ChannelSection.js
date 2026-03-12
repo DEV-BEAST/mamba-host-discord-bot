@@ -10,17 +10,17 @@ export function ChannelSection({ guilds, guildId, channelId, channels, onGuildCh
   useShoelaceEvent(channelRef, 'sl-change', useCallback(e => onChannelChange(e.target.value), [onChannelChange]));
 
   return html`
-    <div class="bg-card rounded-lg p-5 mb-4">
-      <div class="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Channel</div>
+    <div class="bg-card border border-border rounded-lg p-5 mb-4 shadow-card">
+      <div class="text-[14px] font-semibold text-text-secondary uppercase tracking-wide mb-4">Channel</div>
       <div class="mb-4">
-        <label class="block mb-1 text-xs font-medium text-muted-foreground">Guild</label>
-        <sl-select ref=${guildRef} value=${guildId} placeholder="Select a server..." size="small" hoist>
+        <label class="block mb-1.5 text-[13px] font-medium text-text-secondary">Guild</label>
+        <sl-select ref=${guildRef} value=${guildId} placeholder="Select a server..." size="medium" hoist>
           ${guilds.map(g => html`<sl-option value=${g.id}>${g.name}</sl-option>`)}
         </sl-select>
       </div>
       <div>
-        <label class="block mb-1 text-xs font-medium text-muted-foreground">Channel</label>
-        <sl-select ref=${channelRef} value=${channelId} placeholder="Select a channel..." size="small" hoist>
+        <label class="block mb-1.5 text-[13px] font-medium text-text-secondary">Channel</label>
+        <sl-select ref=${channelRef} value=${channelId} placeholder="Select a channel..." size="medium" hoist>
           ${channels.map(c => html`
             <sl-option value=${c.id}>#${c.name}${c.category ? ' (' + c.category + ')' : ''}</sl-option>
           `)}

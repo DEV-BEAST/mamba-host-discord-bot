@@ -19,10 +19,12 @@
             'card-foreground': '#f2f3f5',
             muted: '#2b2d31',
             'muted-foreground': '#949ba4',
+            'text-secondary': '#b5bac1',
             accent: '#FF6F00',
             'accent-hover': '#e56500',
             'accent-dim': 'rgba(255,111,0,0.15)',
             border: '#3f4147',
+            'border-light': '#404249',
             input: '#1e1f22',
             destructive: '#f23f43',
             success: '#23a559',
@@ -40,6 +42,13 @@
           },
           fontFamily: {
             brand: ['Orbitron', 'sans-serif'],
+          },
+          boxShadow: {
+            'card': '0 2px 8px rgba(0,0,0,0.25)',
+            'card-hover': '0 4px 16px rgba(0,0,0,0.35)',
+            'glow-accent': '0 0 20px rgba(255,111,0,0.15)',
+            'sidebar': '4px 0 12px rgba(0,0,0,0.3)',
+            'login': '0 8px 32px rgba(0,0,0,0.5)',
           },
         },
       },
@@ -83,48 +92,153 @@
     a { color: #FF6F00; text-decoration: none; }
     a:hover { text-decoration: underline; }
 
-    /* Shoelace dark theme overrides */
+    /* Scrollbar styling */
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: #1e1f22; }
+    ::-webkit-scrollbar-thumb { background: #404249; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #4e5058; }
+
+    /* ── Shoelace deep theme overrides ── */
     :root {
+      --sl-color-primary-50: rgba(255,111,0,0.08);
+      --sl-color-primary-100: rgba(255,111,0,0.15);
+      --sl-color-primary-200: rgba(255,111,0,0.25);
+      --sl-color-primary-300: #ff9e40;
+      --sl-color-primary-400: #ff8c33;
+      --sl-color-primary-500: #ff7a1a;
       --sl-color-primary-600: #FF6F00;
       --sl-color-primary-700: #e56500;
-      --sl-color-primary-500: #ff8c33;
+      --sl-color-primary-800: #cc5a00;
+      --sl-color-primary-900: #994300;
+      --sl-color-primary-950: #662d00;
+
+      --sl-color-danger-600: #f23f43;
+      --sl-color-success-600: #23a559;
+
       --sl-input-background-color: #1e1f22;
+      --sl-input-background-color-hover: #1e1f22;
+      --sl-input-background-color-focus: #1e1f22;
       --sl-input-border-color: #3f4147;
+      --sl-input-border-color-hover: #4e5058;
+      --sl-input-border-color-focus: #FF6F00;
       --sl-input-color: #f2f3f5;
-      --sl-input-placeholder-color: #949ba4;
-      --sl-input-focus-ring-color: rgba(255, 111, 0, 0.4);
+      --sl-input-placeholder-color: #6d6f78;
+      --sl-input-focus-ring-color: rgba(255, 111, 0, 0.33);
+      --sl-input-border-radius-medium: 4px;
+      --sl-input-border-radius-small: 4px;
+
       --sl-panel-background-color: #313338;
       --sl-panel-border-color: #3f4147;
+      --sl-overlay-background-color: rgba(0,0,0,0.6);
+
+      --sl-border-radius-medium: 4px;
+      --sl-border-radius-large: 8px;
+
+      --sl-font-size-medium: 14px;
+      --sl-font-size-small: 13px;
+
+      --sl-spacing-small: 8px;
+      --sl-spacing-medium: 12px;
     }
-    sl-input::part(base), sl-select::part(combobox), sl-textarea::part(base), sl-color-picker::part(base) {
+
+    /* Input/select/textarea base */
+    sl-input::part(base), sl-select::part(combobox), sl-textarea::part(base) {
       background: #1e1f22;
       border-color: #3f4147;
       color: #f2f3f5;
+      border-radius: 4px;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    sl-input::part(base):hover, sl-select::part(combobox):hover, sl-textarea::part(base):hover {
+      border-color: #4e5058;
     }
     sl-input::part(base):focus-within, sl-select::part(combobox):focus-within, sl-textarea::part(base):focus-within {
       border-color: #FF6F00;
       box-shadow: 0 0 0 3px rgba(255, 111, 0, 0.2);
     }
-    sl-select::part(listbox) {
-      background: #313338;
-      border-color: #3f4147;
-    }
-    sl-option::part(base) {
+    sl-input::part(input), sl-textarea::part(textarea) {
       color: #f2f3f5;
     }
-    sl-option::part(base):hover {
-      background: #383a40;
+    sl-input::part(input)::placeholder, sl-textarea::part(textarea)::placeholder {
+      color: #6d6f78;
     }
+
+    /* Select dropdown */
+    sl-select::part(listbox) {
+      background: #2b2d31;
+      border: 1px solid #3f4147;
+      border-radius: 6px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    }
+    sl-option::part(base) { color: #f2f3f5; }
+    sl-option::part(base):hover { background: #383a40; }
     sl-option[aria-selected="true"]::part(base) {
       background: rgba(255,111,0,0.15);
       color: #FF6F00;
     }
-    sl-switch::part(control) {
-      background: #404249;
-    }
-    sl-switch[checked]::part(control) {
+
+    /* Switch */
+    sl-switch { --width: 40px; --height: 22px; --thumb-size: 16px; }
+    sl-switch::part(control) { background: #404249; border: none; }
+    sl-switch[checked]::part(control) { background: #FF6F00; border: none; }
+
+    /* Buttons */
+    sl-button[variant="primary"]::part(base) {
       background: #FF6F00;
+      border-color: #FF6F00;
+      color: #fff;
+      font-weight: 500;
+      transition: background 0.15s, box-shadow 0.15s;
     }
+    sl-button[variant="primary"]::part(base):hover {
+      background: #e56500;
+      border-color: #e56500;
+    }
+    sl-button[variant="primary"]::part(base):active {
+      background: #cc5a00;
+    }
+    sl-button[variant="default"]::part(base) {
+      background: #404249;
+      border-color: #404249;
+      color: #b5bac1;
+      font-weight: 500;
+    }
+    sl-button[variant="default"]::part(base):hover {
+      background: #4e5058;
+      border-color: #4e5058;
+      color: #f2f3f5;
+    }
+    sl-button[variant="danger"]::part(base) {
+      background: #f23f43;
+      border-color: #f23f43;
+      color: #fff;
+    }
+    sl-button[variant="danger"]::part(base):hover {
+      background: #d83639;
+    }
+
+    /* Alerts */
+    sl-alert::part(base) {
+      border-radius: 4px;
+      border: none;
+    }
+    sl-alert[variant="success"]::part(base) {
+      background: rgba(35,165,89,0.12);
+      color: #23a559;
+    }
+    sl-alert[variant="danger"]::part(base) {
+      background: rgba(242,63,67,0.12);
+      color: #f23f43;
+    }
+
+    /* Color picker */
+    sl-color-picker::part(trigger) {
+      border-color: #3f4147;
+      border-radius: 4px;
+    }
+
+    /* Spinner */
+    sl-spinner { --indicator-color: #FF6F00; --track-color: #3f4147; }
   </style>
 </head>
 <body>

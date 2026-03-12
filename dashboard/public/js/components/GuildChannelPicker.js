@@ -37,15 +37,15 @@ export function GuildChannelPicker({ guildId, channelId, onGuildChange, onChanne
   return html`
     <div class="space-y-4">
       <div>
-        <label class="block mb-1 text-xs font-medium text-muted-foreground">Guild</label>
-        <sl-select ref=${guildRef} value=${guildId || ''} placeholder="Select a server..." size="small" hoist>
+        <label class="block mb-1.5 text-[13px] font-medium text-text-secondary">Guild</label>
+        <sl-select ref=${guildRef} value=${guildId || ''} placeholder="Select a server..." size="medium" hoist>
           ${guilds.map(g => html`<sl-option value=${g.id}>${g.name}</sl-option>`)}
         </sl-select>
       </div>
       ${showChannel && html`
         <div>
-          <label class="block mb-1 text-xs font-medium text-muted-foreground">Channel</label>
-          <sl-select ref=${channelRef} value=${channelId || ''} placeholder="Select a channel..." size="small" hoist>
+          <label class="block mb-1.5 text-[13px] font-medium text-text-secondary">Channel</label>
+          <sl-select ref=${channelRef} value=${channelId || ''} placeholder="Select a channel..." size="medium" hoist>
             ${channels.map(c => html`
               <sl-option value=${c.id}>#${c.name}${c.category ? ' (' + c.category + ')' : ''}</sl-option>
             `)}

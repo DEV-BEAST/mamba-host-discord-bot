@@ -57,28 +57,28 @@ export function MentionPicker({ guildId, channels, onInsert }) {
   if (!guildId) return null;
 
   return html`
-    <div class="bg-card rounded-lg p-5 mb-4">
-      <div class="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+    <div class="bg-card border border-border rounded-lg p-5 mb-4 shadow-card">
+      <div class="text-[14px] font-semibold text-text-secondary uppercase tracking-wide mb-4">
         Mentions <small class="text-muted-foreground font-normal normal-case">(click Insert to add at cursor)</small>
       </div>
-      <div class="flex gap-2 items-center mb-2">
-        <label class="text-xs font-medium text-muted-foreground whitespace-nowrap min-w-[55px]">@User</label>
-        <sl-input ref=${searchRef} placeholder="Search members..." size="small" class="flex-1"></sl-input>
-        <sl-select ref=${userRef} value=${selectedUser} placeholder="Select user..." size="small" hoist class="flex-1">
+      <div class="flex gap-2 items-center mb-2.5">
+        <label class="text-[13px] font-medium text-text-secondary whitespace-nowrap min-w-[55px]">@User</label>
+        <sl-input ref=${searchRef} placeholder="Search members..." size="medium" class="flex-1"></sl-input>
+        <sl-select ref=${userRef} value=${selectedUser} placeholder="Select user..." size="medium" hoist class="flex-1">
           ${members.map(m => html`<sl-option value=${m.id}>${m.displayName} (${m.username})</sl-option>`)}
         </sl-select>
         <sl-button variant="default" size="small" onClick=${() => { if (selectedUser) onInsert('<@' + selectedUser + '>'); }}>Insert</sl-button>
       </div>
-      <div class="flex gap-2 items-center mb-2">
-        <label class="text-xs font-medium text-muted-foreground whitespace-nowrap min-w-[55px]">@Role</label>
-        <sl-select ref=${roleRef} value=${selectedRole} placeholder="Select role..." size="small" hoist class="flex-1">
+      <div class="flex gap-2 items-center mb-2.5">
+        <label class="text-[13px] font-medium text-text-secondary whitespace-nowrap min-w-[55px]">@Role</label>
+        <sl-select ref=${roleRef} value=${selectedRole} placeholder="Select role..." size="medium" hoist class="flex-1">
           ${roles.map(r => html`<sl-option value=${r.id}>${r.name}</sl-option>`)}
         </sl-select>
         <sl-button variant="default" size="small" onClick=${() => { if (selectedRole) onInsert('<@&' + selectedRole + '>'); }}>Insert</sl-button>
       </div>
       <div class="flex gap-2 items-center">
-        <label class="text-xs font-medium text-muted-foreground whitespace-nowrap min-w-[55px]">#Channel</label>
-        <sl-select ref=${channelRef} value=${selectedChannel} placeholder="Select channel..." size="small" hoist class="flex-1">
+        <label class="text-[13px] font-medium text-text-secondary whitespace-nowrap min-w-[55px]">#Channel</label>
+        <sl-select ref=${channelRef} value=${selectedChannel} placeholder="Select channel..." size="medium" hoist class="flex-1">
           ${channels.map(c => html`<sl-option value=${c.id}>#${c.name}${c.category ? ' (' + c.category + ')' : ''}</sl-option>`)}
         </sl-select>
         <sl-button variant="default" size="small" onClick=${() => { if (selectedChannel) onInsert('<#' + selectedChannel + '>'); }}>Insert</sl-button>

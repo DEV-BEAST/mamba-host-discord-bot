@@ -25,19 +25,19 @@ const NAV_ITEMS = [
 
 export function Sidebar({ activePage, onNavigate, onLogout }) {
   return html`
-    <nav class="w-[220px] min-w-[220px] bg-muted flex flex-col py-4">
+    <nav class="w-[220px] min-w-[220px] bg-muted flex flex-col py-4 shadow-sidebar border-r border-border/50">
       <div class="flex items-center gap-2.5 px-4 pb-4 font-brand text-xl font-bold tracking-wide text-foreground border-b border-border">
         <img src="https://www.mambahost.com/og/logo-trans.png" alt="" class="w-7 h-7 object-contain" />
         <span>Mamba Host</span>
       </div>
-      <ul class="list-none flex-1 py-2">
+      <ul class="list-none flex-1 py-3 px-2 space-y-0.5">
         ${NAV_ITEMS.map(item => html`
           <li>
             <a
               href="#${item.page}"
-              class="flex items-center gap-2.5 px-4 py-2 text-sm font-medium transition-colors duration-100 no-underline
+              class="flex items-center gap-2.5 px-3 py-2 text-[14px] font-medium rounded-md transition-all duration-150 no-underline
                 ${activePage === item.page
-                  ? 'bg-accent-dim text-accent'
+                  ? 'bg-accent-dim text-accent border-l-[3px] border-accent pl-[9px]'
                   : 'text-muted-foreground hover:bg-[#383a40] hover:text-foreground'}"
               onClick=${(e) => { e.preventDefault(); onNavigate(item.page); }}
             >
@@ -47,7 +47,7 @@ export function Sidebar({ activePage, onNavigate, onLogout }) {
           </li>
         `)}
       </ul>
-      <div class="px-4 pt-3 border-t border-border">
+      <div class="px-3 pt-3 border-t border-border">
         <sl-button variant="default" size="small" class="w-full" onClick=${onLogout}>Logout</sl-button>
       </div>
     </nav>

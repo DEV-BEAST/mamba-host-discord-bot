@@ -97,20 +97,20 @@ export function JsonSection({ getEmbedData, populateFromData, onGuildSelect, onE
 
   return html`
     <div>
-      <div class="bg-card rounded-lg p-5 mb-4">
-        <div class="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Extract from Discord</div>
+      <div class="bg-card border border-border rounded-lg p-5 mb-4 shadow-card">
+        <div class="text-[14px] font-semibold text-text-secondary uppercase tracking-wide mb-4">Extract from Discord</div>
         <div class="mb-2">
-          <label class="block mb-1 text-xs font-medium text-muted-foreground">Message Link</label>
+          <label class="block mb-1.5 text-[13px] font-medium text-text-secondary">Message Link</label>
           <div class="flex gap-2">
-            <sl-input ref=${linkRef} type="url" placeholder="https://discord.com/channels/guild/channel/message" size="small" class="flex-1"></sl-input>
-            <sl-button variant="default" size="small" loading=${extracting} onClick=${extractFromLink}>Load</sl-button>
+            <sl-input ref=${linkRef} type="url" placeholder="https://discord.com/channels/guild/channel/message" size="medium" class="flex-1"></sl-input>
+            <sl-button variant="default" size="medium" loading=${extracting} onClick=${extractFromLink}>Load</sl-button>
           </div>
         </div>
         <${StatusMessage} message=${extractMsg} type=${extractMsgType} onClear=${() => setExtractMsg(null)} />
       </div>
 
-      <div class="bg-card rounded-lg p-5 mb-4">
-        <div class="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">JSON Export / Import</div>
+      <div class="bg-card border border-border rounded-lg p-5 mb-4 shadow-card">
+        <div class="text-[14px] font-semibold text-text-secondary uppercase tracking-wide mb-4">JSON Export / Import</div>
         <div class="flex gap-2 flex-wrap">
           <sl-button variant="default" size="small" onClick=${exportJSON}>Export JSON</sl-button>
           <sl-button variant="default" size="small" onClick=${() => fileRef.current.click()}>Import JSON</sl-button>

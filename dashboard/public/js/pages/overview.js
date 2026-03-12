@@ -14,9 +14,9 @@ function formatUptime(ms) {
 
 function StatCard({ label, value }) {
   return html`
-    <div class="bg-card rounded-lg p-5">
-      <div class="text-[28px] font-bold text-foreground">${value}</div>
-      <div class="text-xs text-muted-foreground mt-0.5">${label}</div>
+    <div class="bg-card border border-border rounded-lg p-5 shadow-card hover:shadow-card-hover transition-shadow duration-200">
+      <div class="text-[28px] font-bold text-foreground leading-tight">${value}</div>
+      <div class="text-[13px] text-muted-foreground mt-1">${label}</div>
     </div>
   `;
 }
@@ -48,9 +48,9 @@ export default function Overview() {
     </div>
 
     ${error && html`
-      <sl-alert variant="danger" open class="mb-4">
-        <span>Failed to load stats: ${error}</span>
-      </sl-alert>
+      <div class="mb-4 py-2 px-3 rounded-sm text-sm bg-[rgba(242,63,67,0.12)] text-destructive">
+        Failed to load stats: ${error}
+      </div>
     `}
 
     ${stats && html`
@@ -68,7 +68,7 @@ export default function Overview() {
 
     ${!stats && !error && html`
       <div class="flex justify-center py-12">
-        <sl-spinner style="font-size: 2rem; --indicator-color: #FF6F00;"></sl-spinner>
+        <sl-spinner style="font-size: 2rem;"></sl-spinner>
       </div>
     `}
   `;

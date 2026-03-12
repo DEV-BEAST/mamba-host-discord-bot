@@ -12,10 +12,10 @@ function FieldEntry({ field, index, onUpdate, onRemove, onTextFocus }) {
   useShoelaceEvent(inlineRef, 'sl-change', useCallback(e => onUpdate(index, 'inline', e.target.checked), [index, onUpdate]));
 
   return html`
-    <div class="flex gap-2 items-center mb-2 bg-muted p-2 rounded-sm">
-      <sl-input ref=${nameRef} value=${field.name} placeholder="Field name" size="small" class="flex-1"
+    <div class="flex gap-2 items-center mb-2 bg-muted border border-border/50 p-2.5 rounded-sm">
+      <sl-input ref=${nameRef} value=${field.name} placeholder="Field name" size="medium" class="flex-1"
         onFocus=${onTextFocus}></sl-input>
-      <sl-input ref=${valueRef} value=${field.value} placeholder="Field value" size="small" class="flex-1"
+      <sl-input ref=${valueRef} value=${field.value} placeholder="Field value" size="medium" class="flex-1"
         onFocus=${onTextFocus}></sl-input>
       <sl-switch ref=${inlineRef} .checked=${field.inline} size="small">Inline</sl-switch>
       <sl-button variant="danger" size="small" onClick=${() => onRemove(index)}>
@@ -41,8 +41,8 @@ export function FieldsSection({ fields, onFieldsChange, onTextFocus }) {
   }, [fields, onFieldsChange]);
 
   return html`
-    <div class="bg-card rounded-lg p-5 mb-4">
-      <div class="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+    <div class="bg-card border border-border rounded-lg p-5 mb-4 shadow-card">
+      <div class="text-[14px] font-semibold text-text-secondary uppercase tracking-wide mb-4">
         Fields <small class="text-muted-foreground font-normal normal-case">(max 25)</small>
       </div>
       ${fields.map((f, i) => html`
