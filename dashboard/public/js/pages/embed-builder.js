@@ -12,6 +12,7 @@ let lastFocusedInput = null; // track last focused text input/textarea for menti
 let mentionMembers = [];
 let mentionRoles = [];
 let mentionChannels = [];
+let botInfo = { username: 'Bot', displayName: 'Bot', avatar: '', discriminator: '0' };
 
 export function render(container) {
   container.innerHTML = `
@@ -151,6 +152,7 @@ export function render(container) {
   mentionRoles = [];
   mentionChannels = [];
   loadGuilds();
+  loadBotInfo();
   bindEvents();
   updatePreview();
 }
@@ -166,6 +168,18 @@ async function loadGuilds() {
       guilds.map(g => `<option value="${g.id}">${esc(g.name)}</option>`).join('');
   } catch (err) {
     console.error('Failed to load guilds:', err);
+  }
+}
+
+async function loadBotInfo() {
+  try {
+    const settings = await get('/api/settings');
+    if (settings.bot) {
+      botInfo = settings.bot;
+      updatePreview();
+    }
+  } catch (err) {
+    console.error('Failed to load bot info:', err);
   }
 }
 
@@ -405,6 +419,8 @@ function renderAttachments() {
       renderAttachments();
     });
   });
+
+  updatePreview();
 }
 
 function formatSize(bytes) {
@@ -612,74 +628,109 @@ function updatePreview() {
   if (!preview) return;
 
   const color = data.color || '#202225';
-  const hasContent = data.author.name || data.title || data.description || data.fields.length ||
+  const hasEmbed = data.author.name || data.title || data.description || data.fields.length ||
     data.thumbnail || data.image || data.footer.text || data.timestamp;
+  const hasAttachments = attachments.length > 0;
 
-  if (!hasContent) {
+  if (!hasEmbed && !hasAttachments) {
     preview.innerHTML = '<p class="text-muted">Start typing to see a preview...</p>';
     return;
   }
 
-  let html = '<article class="dc-embed" style="border-color:' + color + '">';
-  html += '<div class="dc-embed-grid">';
+  const now = new Date();
+  const timeStr = 'Today at ' + now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
 
-  // Author
-  if (data.author.name) {
-    html += '<div class="dc-embed-author">';
-    if (data.author.iconURL) html += '<img class="dc-embed-author-icon" src="' + escAttr(data.author.iconURL) + '" alt="">';
-    if (data.author.url) {
-      html += '<a class="dc-embed-author-name" href="' + escAttr(data.author.url) + '" target="_blank">' + esc(data.author.name) + '</a>';
-    } else {
-      html += '<span class="dc-embed-author-name">' + esc(data.author.name) + '</span>';
+  // Wrap in Discord message layout
+  let html = '<div class="dc-message">';
+  html += '<img class="dc-msg-avatar" src="' + escAttr(botInfo.avatar) + '" alt="">';
+  html += '<div class="dc-msg-body">';
+  html += '<div class="dc-msg-header">';
+  html += '<span class="dc-msg-author">' + esc(botInfo.displayName) + '</span>';
+  html += '<span class="dc-msg-bot-tag">BOT</span>';
+  html += '<span class="dc-msg-time">' + timeStr + '</span>';
+  html += '</div>';
+
+  // Embed
+  if (hasEmbed) {
+    html += '<article class="dc-embed" style="border-color:' + color + '">';
+    html += '<div class="dc-embed-grid">';
+
+    // Author
+    if (data.author.name) {
+      html += '<div class="dc-embed-author">';
+      if (data.author.iconURL) html += '<img class="dc-embed-author-icon" src="' + escAttr(data.author.iconURL) + '" alt="">';
+      if (data.author.url) {
+        html += '<a class="dc-embed-author-name" href="' + escAttr(data.author.url) + '" target="_blank">' + esc(data.author.name) + '</a>';
+      } else {
+        html += '<span class="dc-embed-author-name">' + esc(data.author.name) + '</span>';
+      }
+      html += '</div>';
+    }
+
+    // Title
+    if (data.title) {
+      html += '<div class="dc-embed-title">';
+      if (data.url) html += '<a href="' + escAttr(data.url) + '" target="_blank">' + esc(data.title) + '</a>';
+      else html += esc(data.title);
+      html += '</div>';
+    }
+
+    // Description
+    if (data.description) {
+      html += '<div class="dc-embed-description">' + renderMarkdown(data.description) + '</div>';
+    }
+
+    // Fields
+    if (data.fields.length > 0) {
+      html += renderFieldsGrid(data.fields);
+    }
+
+    // Thumbnail
+    if (data.thumbnail) {
+      html += '<div class="dc-embed-thumbnail"><img src="' + escAttr(data.thumbnail) + '" alt=""></div>';
+    }
+
+    // Image
+    if (data.image) {
+      html += '<div class="dc-embed-image"><img src="' + escAttr(data.image) + '" alt=""></div>';
+    }
+
+    // Footer
+    if (data.footer.text || data.timestamp) {
+      html += '<div class="dc-embed-footer">';
+      if (data.footer.iconURL) html += '<img class="dc-embed-footer-icon" src="' + escAttr(data.footer.iconURL) + '" alt="">';
+      html += '<span class="dc-embed-footer-text">';
+      const parts = [];
+      if (data.footer.text) parts.push(esc(data.footer.text));
+      if (data.timestamp) parts.push(timeStr);
+      html += parts.join(' <span class="dc-embed-footer-sep">\u2022</span> ');
+      html += '</span></div>';
+    }
+
+    html += '</div></article>';
+  }
+
+  // File attachments in preview
+  if (hasAttachments) {
+    html += '<div class="dc-attachments">';
+    for (const att of attachments) {
+      if (att.previewUrl) {
+        // Image attachment
+        html += '<div class="dc-attachment-img"><img src="' + escAttr(att.previewUrl) + '" alt="' + escAttr(att.name) + '"></div>';
+      } else {
+        // Non-image file
+        html += '<div class="dc-attachment-file">';
+        html += '<svg viewBox="0 0 24 24" width="24" height="24" fill="#b5bac1"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zM6 20V4h7v5h5v11H6z"/></svg>';
+        html += '<div class="dc-attachment-info">';
+        html += '<span class="dc-attachment-name">' + esc(att.name) + '</span>';
+        html += '<span class="dc-attachment-size">' + formatSize(att.size) + '</span>';
+        html += '</div></div>';
+      }
     }
     html += '</div>';
   }
 
-  // Title
-  if (data.title) {
-    html += '<div class="dc-embed-title">';
-    if (data.url) html += '<a href="' + escAttr(data.url) + '" target="_blank">' + esc(data.title) + '</a>';
-    else html += esc(data.title);
-    html += '</div>';
-  }
-
-  // Description
-  if (data.description) {
-    html += '<div class="dc-embed-description">' + renderMarkdown(data.description) + '</div>';
-  }
-
-  // Fields - use Discord's inline grouping algorithm
-  if (data.fields.length > 0) {
-    html += renderFieldsGrid(data.fields);
-  }
-
-  // Thumbnail (positioned by grid, rendered here for source order)
-  if (data.thumbnail) {
-    html += '<div class="dc-embed-thumbnail"><img src="' + escAttr(data.thumbnail) + '" alt=""></div>';
-  }
-
-  // Image
-  if (data.image) {
-    html += '<div class="dc-embed-image"><img src="' + escAttr(data.image) + '" alt=""></div>';
-  }
-
-  // Footer
-  if (data.footer.text || data.timestamp) {
-    html += '<div class="dc-embed-footer">';
-    if (data.footer.iconURL) html += '<img class="dc-embed-footer-icon" src="' + escAttr(data.footer.iconURL) + '" alt="">';
-    html += '<span class="dc-embed-footer-text">';
-    const parts = [];
-    if (data.footer.text) parts.push(esc(data.footer.text));
-    if (data.timestamp) {
-      const now = new Date();
-      const timeStr = 'Today at ' + now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-      parts.push(timeStr);
-    }
-    html += parts.join(' <span class="dc-embed-footer-sep">\u2022</span> ');
-    html += '</span></div>';
-  }
-
-  html += '</div></article>';
+  html += '</div></div>'; // close dc-msg-body + dc-message
   preview.innerHTML = html;
 }
 

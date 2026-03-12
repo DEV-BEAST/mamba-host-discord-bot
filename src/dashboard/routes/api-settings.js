@@ -6,7 +6,7 @@ export function createSettingsRouter() {
 
   // GET /api/settings
   router.get('/', (req, res) => {
-    const { botConfig } = req.app.locals;
+    const { client, botConfig } = req.app.locals;
     const presenceInfo = getCurrentPresence();
 
     res.json({
@@ -14,6 +14,12 @@ export function createSettingsRouter() {
       presenceInfo,
       autoRoleId: botConfig.autoRoleId,
       welcome: botConfig.welcome,
+      bot: {
+        username: client.user.username,
+        displayName: client.user.displayName || client.user.username,
+        avatar: client.user.displayAvatarURL({ size: 128 }),
+        discriminator: client.user.discriminator,
+      },
     });
   });
 

@@ -1,6 +1,8 @@
 import { get, put } from '../api.js';
 import { showStatus } from '../app.js';
 
+let botInfo = { username: 'Bot', displayName: 'Bot', avatar: '', discriminator: '0' };
+
 export function render(container) {
   container.innerHTML = `
     <div class="page-header">
@@ -39,6 +41,7 @@ export function render(container) {
           <input type="url" id="pres-url" placeholder="https://twitch.tv/...">
         </div>
         <button class="btn btn-primary" id="save-presence">Save Presence</button>
+        <div id="presence-preview" class="presence-preview"></div>
       </div>
 
       <!-- Auto-role -->
@@ -77,6 +80,7 @@ export function render(container) {
           <small class="text-muted">Placeholders: {user} {server} {memberCount}</small>
         </div>
         <button class="btn btn-primary" id="save-welcome">Save Welcome</button>
+        <div id="welcome-preview" class="welcome-preview"></div>
       </div>
     </div>
   `;
@@ -87,9 +91,92 @@ export function render(container) {
 
 export function destroy() {}
 
+function esc(str) {
+  const d = document.createElement('div');
+  d.textContent = str;
+  return d.innerHTML;
+}
+
+function escAttr(str) {
+  return str.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/'/g, '&#39;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+// ── Previews ──
+
+function updatePresencePreview() {
+  const name = document.getElementById('pres-name').value.trim();
+  const type = document.getElementById('pres-type').value;
+  const status = document.getElementById('pres-status').value;
+  const preview = document.getElementById('presence-preview');
+  if (!preview) return;
+
+  const typeLabels = {
+    playing: 'Playing',
+    watching: 'Watching',
+    listening: 'Listening to',
+    competing: 'Competing in',
+    streaming: 'Streaming',
+  };
+
+  const activityText = name
+    ? `${typeLabels[type] || 'Playing'} ${esc(name)}`
+    : '';
+
+  const isStreaming = type === 'streaming' && name;
+
+  preview.innerHTML = `
+    <div class="presence-member${isStreaming ? ' presence-streaming' : ''}">
+      <div class="presence-avatar-wrap">
+        <img class="presence-avatar" src="${escAttr(botInfo.avatar)}" alt="">
+        <div class="presence-status-dot ${status}"></div>
+      </div>
+      <div class="presence-info">
+        <div class="presence-name">${esc(botInfo.displayName)}</div>
+        ${activityText ? `<div class="presence-activity">${activityText}</div>` : ''}
+      </div>
+    </div>
+  `;
+}
+
+function updateWelcomePreview() {
+  const template = document.getElementById('wc-message').value || 'Welcome {user} to {server}!';
+  const preview = document.getElementById('welcome-preview');
+  if (!preview) return;
+
+  // Replace placeholders with example values
+  const rendered = template
+    .replace(/{user}/g, '<span class="dc-msg-mention">@ExampleUser</span>')
+    .replace(/{server}/g, 'My Server')
+    .replace(/{memberCount}/g, '42');
+
+  const now = new Date();
+  const timeStr = 'Today at ' + now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+
+  preview.innerHTML = `
+    <div class="dc-message">
+      <img class="dc-msg-avatar" src="${escAttr(botInfo.avatar)}" alt="">
+      <div class="dc-msg-body">
+        <div class="dc-msg-header">
+          <span class="dc-msg-author">${esc(botInfo.displayName)}</span>
+          <span class="dc-msg-bot-tag">BOT</span>
+          <span class="dc-msg-time">${timeStr}</span>
+        </div>
+        <div class="dc-msg-content">${rendered}</div>
+      </div>
+    </div>
+  `;
+}
+
+// ── Data loading ──
+
 async function loadSettings() {
   try {
     const [settings, guilds] = await Promise.all([get('/api/settings'), get('/api/guilds')]);
+
+    // Store bot info for previews
+    if (settings.bot) {
+      botInfo = settings.bot;
+    }
 
     // Presence
     document.getElementById('pres-name').value = settings.presence.name || '';
@@ -104,7 +191,6 @@ async function loadSettings() {
 
     // Auto-role: try to find which guild has the current role
     if (settings.autoRoleId) {
-      // We'll load roles for each guild until we find the matching role
       for (const g of guilds) {
         const roles = await get(`/api/guilds/${g.id}/roles`);
         const match = roles.find(r => r.id === settings.autoRoleId);
@@ -123,6 +209,10 @@ async function loadSettings() {
       document.getElementById('wc-guild').value = settings.welcome.guildId;
       await loadChannelsForWelcome(settings.welcome.guildId, settings.welcome.channelId);
     }
+
+    // Render initial previews
+    updatePresencePreview();
+    updateWelcomePreview();
   } catch (err) {
     console.error('Failed to load settings:', err);
   }
@@ -145,6 +235,14 @@ async function loadChannelsForWelcome(guildId, selectedChannelId) {
 }
 
 function bindEvents() {
+  // Presence — live preview on any input change
+  const presInputs = ['pres-name', 'pres-type', 'pres-status'];
+  presInputs.forEach(id => {
+    const el = document.getElementById(id);
+    el.addEventListener('input', updatePresencePreview);
+    el.addEventListener('change', updatePresencePreview);
+  });
+
   // Presence save
   document.getElementById('save-presence').addEventListener('click', async () => {
     const card = document.getElementById('presence-card');
@@ -185,6 +283,9 @@ function bindEvents() {
     if (e.target.value) loadChannelsForWelcome(e.target.value);
     else document.getElementById('wc-channel').innerHTML = '<option value="">Select a channel...</option>';
   });
+
+  // Welcome — live preview on message change
+  document.getElementById('wc-message').addEventListener('input', updateWelcomePreview);
 
   // Welcome save
   document.getElementById('save-welcome').addEventListener('click', async () => {
