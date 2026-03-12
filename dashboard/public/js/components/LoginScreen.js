@@ -29,7 +29,7 @@ export function LoginScreen({ onLogin }) {
 
   return html`
     <div class="flex items-center justify-center h-screen bg-background">
-      <div class="bg-card border border-accent/20 rounded-lg p-10 w-[400px] text-center shadow-login">
+      <div class="bg-card border-0 rounded-lg p-10 w-[400px] text-center shadow-login">
         <div class="flex items-center justify-center gap-3 font-brand text-[26px] font-bold text-foreground mb-2 tracking-wider whitespace-nowrap">
           <img src="https://www.mambahost.com/og/logo-trans.png" alt="" class="w-12 h-12 object-contain" />
           <span>Mamba Host</span>

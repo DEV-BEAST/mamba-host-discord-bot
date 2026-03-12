@@ -12,7 +12,7 @@ export function FooterSection({ footer, timestamp, onFooterChange, onTimestampCh
   useShoelaceEvent(tsRef, 'sl-change', useCallback(e => onTimestampChange(e.target.checked), [onTimestampChange]));
 
   return html`
-    <div class="bg-card border border-accent/20 rounded-lg p-5 mb-4 shadow-card">
+    <div class="bg-card border-0 rounded-lg p-5 mb-4 shadow-card">
       <div class="text-[14px] font-semibold text-text-secondary uppercase tracking-wide mb-4">Footer</div>
       <div class="mb-4">
         <label class="block mb-1.5 text-[13px] font-medium text-text-secondary">Footer Text</label>
