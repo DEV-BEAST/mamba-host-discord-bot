@@ -1,128 +1,98 @@
-import { post, get } from './api.js';
+import { html } from 'htm/preact';
+import { render } from 'preact';
+import { useState, useEffect, useCallback } from 'preact/hooks';
+import { get, post } from './api.js';
+import { LoginScreen } from './components/LoginScreen.js';
+import { Layout } from './components/Layout.js';
 
-// Page modules (lazy loaded)
-const pages = {
+// Lazy-loaded page components
+const pageModules = {
   'overview': () => import('./pages/overview.js'),
   'embed-builder': () => import('./pages/embed-builder.js'),
   'settings': () => import('./pages/settings.js'),
   'leaderboard': () => import('./pages/leaderboard.js'),
 };
 
-const loginScreen = document.getElementById('login-screen');
-const dashboard = document.getElementById('dashboard');
-const pageContent = document.getElementById('page-content');
+function App() {
+  const [authed, setAuthed] = useState(null); // null = checking, true/false
+  const [activePage, setActivePage] = useState('overview');
+  const [PageComponent, setPageComponent] = useState(null);
 
-let currentPage = null;
+  // Check auth on mount
+  useEffect(() => {
+    get('/api/auth/status')
+      .then(r => setAuthed(r.authenticated))
+      .catch(() => setAuthed(false));
+  }, []);
 
-// ── Auth ──
-
-async function checkAuth() {
-  try {
-    const { authenticated } = await get('/api/auth/status');
-    if (authenticated) {
-      showDashboard();
-    } else {
-      showLogin();
+  // Load page component when activePage changes
+  const loadPage = useCallback(async (page) => {
+    if (!pageModules[page]) page = 'overview';
+    try {
+      const mod = await pageModules[page]();
+      setPageComponent(() => mod.default || mod.Page);
+    } catch (err) {
+      setPageComponent(() => () => html`
+        <div class="bg-card rounded-lg p-5">
+          <p class="text-destructive text-sm">Failed to load page: ${err.message}</p>
+        </div>
+      `);
     }
-  } catch {
-    showLogin();
-  }
-}
+  }, []);
 
-function showLogin() {
-  loginScreen.style.display = '';
-  dashboard.style.display = 'none';
-}
+  useEffect(() => {
+    if (authed) loadPage(activePage);
+  }, [authed, activePage, loadPage]);
 
-function showDashboard() {
-  loginScreen.style.display = 'none';
-  dashboard.style.display = '';
-  navigateFromHash();
-}
+  // Hash-based routing
+  useEffect(() => {
+    const onHash = () => {
+      const hash = window.location.hash.replace('#', '') || 'overview';
+      setActivePage(hash);
+    };
+    window.addEventListener('hashchange', onHash);
+    // Set initial hash
+    const initial = window.location.hash.replace('#', '') || 'overview';
+    setActivePage(initial);
+    return () => window.removeEventListener('hashchange', onHash);
+  }, []);
 
-// Login form
-document.getElementById('login-form').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const pw = document.getElementById('login-password').value;
-  const errEl = document.getElementById('login-error');
-  errEl.style.display = 'none';
-
-  try {
-    await post('/api/auth/login', { password: pw });
-    showDashboard();
-  } catch (err) {
-    errEl.textContent = err.message || 'Invalid password';
-    errEl.style.display = '';
-  }
-});
-
-// Logout
-document.getElementById('logout-btn').addEventListener('click', async () => {
-  await post('/api/auth/logout');
-  showLogin();
-  document.getElementById('login-password').value = '';
-});
-
-// ── SPA Router ──
-
-function navigateFromHash() {
-  const hash = window.location.hash.replace('#', '') || 'overview';
-  navigateTo(hash);
-}
-
-async function navigateTo(page) {
-  if (!pages[page]) page = 'overview';
-
-  // Update active nav link
-  document.querySelectorAll('.nav-link').forEach(link => {
-    link.classList.toggle('active', link.dataset.page === page);
-  });
-
-  // Teardown previous page
-  if (currentPage && currentPage.destroy) {
-    currentPage.destroy();
-  }
-
-  // Load and render page
-  try {
-    const mod = await pages[page]();
-    pageContent.innerHTML = '';
-    currentPage = mod;
-    mod.render(pageContent);
-  } catch (err) {
-    pageContent.innerHTML = `<div class="card"><p class="status-msg error">Failed to load page: ${err.message}</p></div>`;
-  }
-}
-
-// Nav link clicks
-document.querySelectorAll('.nav-link').forEach(link => {
-  link.addEventListener('click', (e) => {
-    e.preventDefault();
-    const page = link.dataset.page;
+  const navigate = useCallback((page) => {
     window.location.hash = page;
-    navigateTo(page);
-  });
-});
+    setActivePage(page);
+  }, []);
 
-window.addEventListener('hashchange', navigateFromHash);
+  const handleLogin = useCallback(() => {
+    setAuthed(true);
+  }, []);
 
-// ── Helpers exported for pages ──
+  const handleLogout = useCallback(async () => {
+    await post('/api/auth/logout');
+    setAuthed(false);
+  }, []);
 
-export function showStatus(container, message, type = 'success') {
-  let el = container.querySelector('.status-msg');
-  if (!el) {
-    el = document.createElement('div');
-    el.className = 'status-msg';
-    container.appendChild(el);
+  // Loading state
+  if (authed === null) {
+    return html`
+      <div class="flex items-center justify-center h-screen">
+        <sl-spinner style="font-size: 2rem; --indicator-color: #FF6F00;"></sl-spinner>
+      </div>
+    `;
   }
-  el.className = `status-msg ${type}`;
-  el.textContent = message;
-  el.style.display = '';
-  // Only auto-hide success messages; errors stay visible
-  if (type === 'success') {
-    setTimeout(() => { el.style.display = 'none'; }, 4000);
+
+  if (!authed) {
+    return html`<${LoginScreen} onLogin=${handleLogin} />`;
   }
+
+  return html`
+    <${Layout}
+      activePage=${activePage}
+      onNavigate=${navigate}
+      onLogout=${handleLogout}
+    >
+      ${PageComponent && html`<${PageComponent} />`}
+    <//>
+  `;
 }
 
-// ── Init ──
-checkAuth();
+render(html`<${App} />`, document.getElementById('app'));

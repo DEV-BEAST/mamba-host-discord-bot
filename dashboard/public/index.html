@@ -1,65 +1,134 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>MambaHost Bot Dashboard</title>
-  <link rel="stylesheet" href="/css/styles.css">
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            background: '#1e1f22',
+            foreground: '#f2f3f5',
+            card: '#313338',
+            'card-foreground': '#f2f3f5',
+            muted: '#2b2d31',
+            'muted-foreground': '#949ba4',
+            accent: '#FF6F00',
+            'accent-hover': '#e56500',
+            'accent-dim': 'rgba(255,111,0,0.15)',
+            border: '#3f4147',
+            input: '#1e1f22',
+            destructive: '#f23f43',
+            success: '#23a559',
+            discord: {
+              blurple: '#5865f2',
+              dark: '#2b2d31',
+              text: '#dcddde',
+              link: '#00a8fc',
+            },
+          },
+          borderRadius: {
+            lg: '8px',
+            md: '6px',
+            sm: '4px',
+          },
+          fontFamily: {
+            brand: ['Orbitron', 'sans-serif'],
+          },
+        },
+      },
+    }
+  </script>
+
+  <!-- Shoelace CSS + JS -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.20.1/cdn/themes/dark.css">
+  <script type="module" src="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.20.1/cdn/shoelace-autoloader.js"></script>
+
+  <!-- Orbitron font -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
+
+  <!-- Discord preview styles -->
+  <link rel="stylesheet" href="/css/discord-preview.css">
+
+  <!-- Import map for Preact + HTM -->
+  <script type="importmap">
+  {
+    "imports": {
+      "preact": "https://esm.sh/preact@10",
+      "preact/hooks": "https://esm.sh/preact@10/hooks",
+      "htm/preact": "https://esm.sh/htm@3/preact",
+      "preact-router": "https://esm.sh/preact-router@4"
+    }
+  }
+  </script>
+
+  <style>
+    /* Base resets */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #1e1f22;
+      color: #f2f3f5;
+      line-height: 1.5;
+    }
+    a { color: #FF6F00; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* Shoelace dark theme overrides */
+    :root {
+      --sl-color-primary-600: #FF6F00;
+      --sl-color-primary-700: #e56500;
+      --sl-color-primary-500: #ff8c33;
+      --sl-input-background-color: #1e1f22;
+      --sl-input-border-color: #3f4147;
+      --sl-input-color: #f2f3f5;
+      --sl-input-placeholder-color: #949ba4;
+      --sl-input-focus-ring-color: rgba(255, 111, 0, 0.4);
+      --sl-panel-background-color: #313338;
+      --sl-panel-border-color: #3f4147;
+    }
+    sl-input::part(base), sl-select::part(combobox), sl-textarea::part(base), sl-color-picker::part(base) {
+      background: #1e1f22;
+      border-color: #3f4147;
+      color: #f2f3f5;
+    }
+    sl-input::part(base):focus-within, sl-select::part(combobox):focus-within, sl-textarea::part(base):focus-within {
+      border-color: #FF6F00;
+      box-shadow: 0 0 0 3px rgba(255, 111, 0, 0.2);
+    }
+    sl-select::part(listbox) {
+      background: #313338;
+      border-color: #3f4147;
+    }
+    sl-option::part(base) {
+      color: #f2f3f5;
+    }
+    sl-option::part(base):hover {
+      background: #383a40;
+    }
+    sl-option[aria-selected="true"]::part(base) {
+      background: rgba(255,111,0,0.15);
+      color: #FF6F00;
+    }
+    sl-switch::part(control) {
+      background: #404249;
+    }
+    sl-switch[checked]::part(control) {
+      background: #FF6F00;
+    }
+  </style>
 </head>
 <body>
-  <!-- Login Screen -->
-  <div id="login-screen" class="login-screen">
-    <div class="login-card">
-      <div class="login-logo"><img src="https://www.mambahost.com/og/logo-trans.png" alt="" class="login-logo-icon"><span>Mamba Host</span></div>
-      <p class="login-subtitle">Bot Dashboard</p>
-      <form id="login-form">
-        <input type="password" id="login-password" placeholder="Enter password" autocomplete="current-password" required>
-        <button type="submit" class="btn btn-primary">Login</button>
-        <div id="login-error" class="status-msg error" style="display:none"></div>
-      </form>
-    </div>
-  </div>
-
-  <!-- Dashboard -->
-  <div id="dashboard" class="dashboard" style="display:none">
-    <!-- Sidebar -->
-    <nav class="sidebar">
-      <div class="sidebar-brand">
-        <img src="https://www.mambahost.com/og/logo-trans.png" alt="" class="sidebar-logo-icon">
-        <span>Mamba Host</span>
-      </div>
-      <ul class="nav-links">
-        <li><a href="#overview" class="nav-link active" data-page="overview">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
-          Overview
-        </a></li>
-        <li><a href="#embed-builder" class="nav-link" data-page="embed-builder">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M21 3H3c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H3V5h18v14z"/></svg>
-          Embed Builder
-        </a></li>
-        <li><a href="#settings" class="nav-link" data-page="settings">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 00.12-.61l-1.92-3.32a.49.49 0 00-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 00-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96a.49.49 0 00-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58a.49.49 0 00-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6A3.6 3.6 0 1115.6 12 3.6 3.6 0 0112 15.6z"/></svg>
-          Settings
-        </a></li>
-        <li><a href="#leaderboard" class="nav-link" data-page="leaderboard">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M7.5 21H2V9h5.5v12zm7.25-18h-5.5v18h5.5V3zM22 11h-5.5v10H22V11z"/></svg>
-          Leaderboard
-        </a></li>
-      </ul>
-      <div class="sidebar-footer">
-        <button id="logout-btn" class="btn btn-secondary btn-sm">Logout</button>
-      </div>
-    </nav>
-
-    <!-- Content -->
-    <main class="content">
-      <div id="page-content"></div>
-    </main>
-  </div>
-
+  <div id="app"></div>
   <script type="module" src="/js/app.js"></script>
 </body>
 </html>

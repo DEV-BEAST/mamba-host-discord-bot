@@ -1,91 +1,114 @@
+import { html } from 'htm/preact';
+import { useState, useEffect, useRef, useCallback } from 'preact/hooks';
 import { get } from '../api.js';
+import { useShoelaceEvent } from '../hooks/useShoelace.js';
 
-export function render(container) {
-  container.innerHTML = `
-    <div class="page-header">
-      <h1>Leaderboard</h1>
-      <p>XP rankings by server</p>
-    </div>
-    <div class="card">
-      <div class="form-group">
-        <label>Select Guild</label>
-        <select id="lb-guild"><option value="">Select a server...</option></select>
-      </div>
-      <div id="lb-content"></div>
-    </div>
-  `;
-
-  loadGuilds();
-  document.getElementById('lb-guild').addEventListener('change', (e) => {
-    if (e.target.value) loadLeaderboard(e.target.value);
-    else document.getElementById('lb-content').innerHTML = '';
-  });
-}
-
-export function destroy() {}
-
-async function loadGuilds() {
-  try {
-    const guilds = await get('/api/guilds');
-    const sel = document.getElementById('lb-guild');
-    sel.innerHTML = '<option value="">Select a server...</option>' +
-      guilds.map(g => `<option value="${g.id}">${g.name}</option>`).join('');
-
-    // Auto-select first guild
-    if (guilds.length > 0) {
-      sel.value = guilds[0].id;
-      loadLeaderboard(guilds[0].id);
-    }
-  } catch (err) {
-    document.getElementById('lb-content').innerHTML = `<div class="status-msg error">${err.message}</div>`;
-  }
-}
-
-async function loadLeaderboard(guildId) {
-  const content = document.getElementById('lb-content');
-  content.innerHTML = '<p class="text-muted">Loading...</p>';
-
-  try {
-    const data = await get(`/api/leaderboard/${guildId}`);
-
-    if (data.leaderboard.length === 0) {
-      content.innerHTML = '<p class="text-muted">No XP data yet. Users earn XP by sending messages.</p>';
-      return;
-    }
-
-    const rows = data.leaderboard.map(u => {
-      const medal = u.rank === 1 ? '<span class="medal">🥇</span>'
-        : u.rank === 2 ? '<span class="medal">🥈</span>'
-        : u.rank === 3 ? '<span class="medal">🥉</span>' : '';
-
-      const avatar = u.avatar
-        ? `<img class="user-avatar" src="${u.avatar}" alt="">`
-        : `<div class="user-avatar" style="background:var(--bg-lighter);border-radius:50%"></div>`;
-
-      return `<tr>
-        <td class="rank">${medal || u.rank}</td>
-        <td><div class="user-cell">${avatar}<span>${escapeHtml(u.displayName)}</span></div></td>
-        <td>${u.level}</td>
-        <td class="xp-value">${u.xp.toLocaleString()}</td>
-        <td>${u.messages.toLocaleString()}</td>
-      </tr>`;
-    }).join('');
-
-    content.innerHTML = `
-      <table class="lb-table">
-        <thead><tr>
-          <th>Rank</th><th>User</th><th>Level</th><th>XP</th><th>Messages</th>
-        </tr></thead>
-        <tbody>${rows}</tbody>
-      </table>
-    `;
-  } catch (err) {
-    content.innerHTML = `<div class="status-msg error">${err.message}</div>`;
-  }
-}
-
-function escapeHtml(str) {
+function esc(str) {
   const d = document.createElement('div');
   d.textContent = str;
   return d.innerHTML;
+}
+
+export default function Leaderboard() {
+  const [guilds, setGuilds] = useState([]);
+  const [guildId, setGuildId] = useState('');
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const guildRef = useRef(null);
+
+  useShoelaceEvent(guildRef, 'sl-change', useCallback((e) => {
+    setGuildId(e.target.value);
+  }, []));
+
+  // Load guilds
+  useEffect(() => {
+    get('/api/guilds')
+      .then(g => {
+        setGuilds(g);
+        if (g.length > 0) setGuildId(g[0].id);
+      })
+      .catch(err => setError(err.message));
+  }, []);
+
+  // Load leaderboard when guild changes
+  useEffect(() => {
+    if (!guildId) { setData(null); return; }
+    setLoading(true);
+    setError(null);
+    get('/api/leaderboard/' + guildId)
+      .then(d => { setData(d.leaderboard); setLoading(false); })
+      .catch(err => { setError(err.message); setLoading(false); });
+  }, [guildId]);
+
+  const medals = { 1: '\u{1F947}', 2: '\u{1F948}', 3: '\u{1F949}' };
+
+  return html`
+    <div class="mb-6">
+      <h1 class="text-[22px] font-bold">Leaderboard</h1>
+      <p class="text-muted-foreground text-sm mt-0.5">XP rankings by server</p>
+    </div>
+
+    <div class="bg-card rounded-lg p-5">
+      <div class="mb-4">
+        <label class="block mb-1 text-xs font-medium text-muted-foreground">Select Guild</label>
+        <sl-select ref=${guildRef} value=${guildId} placeholder="Select a server..." size="small" hoist>
+          ${guilds.map(g => html`<sl-option value=${g.id}>${g.name}</sl-option>`)}
+        </sl-select>
+      </div>
+
+      ${loading && html`
+        <div class="flex justify-center py-8">
+          <sl-spinner style="font-size: 1.5rem; --indicator-color: #FF6F00;"></sl-spinner>
+        </div>
+      `}
+
+      ${error && html`
+        <sl-alert variant="danger" open>
+          <span>${error}</span>
+        </sl-alert>
+      `}
+
+      ${data && data.length === 0 && html`
+        <p class="text-muted-foreground text-sm">No XP data yet. Users earn XP by sending messages.</p>
+      `}
+
+      ${data && data.length > 0 && html`
+        <div class="overflow-x-auto">
+          <table class="w-full border-collapse">
+            <thead>
+              <tr>
+                <th class="text-left px-3 py-2.5 text-xs text-muted-foreground uppercase tracking-wide border-b border-border">Rank</th>
+                <th class="text-left px-3 py-2.5 text-xs text-muted-foreground uppercase tracking-wide border-b border-border">User</th>
+                <th class="text-left px-3 py-2.5 text-xs text-muted-foreground uppercase tracking-wide border-b border-border">Level</th>
+                <th class="text-left px-3 py-2.5 text-xs text-muted-foreground uppercase tracking-wide border-b border-border">XP</th>
+                <th class="text-left px-3 py-2.5 text-xs text-muted-foreground uppercase tracking-wide border-b border-border">Messages</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${data.map(u => html`
+                <tr class="hover:bg-muted">
+                  <td class="px-3 py-2.5 border-b border-border text-sm font-bold w-[50px]">
+                    ${medals[u.rank] ? html`<span class="text-lg">${medals[u.rank]}</span>` : u.rank}
+                  </td>
+                  <td class="px-3 py-2.5 border-b border-border text-sm">
+                    <div class="flex items-center gap-2.5">
+                      ${u.avatar
+                        ? html`<img class="w-7 h-7 rounded-full" src=${u.avatar} alt="" />`
+                        : html`<div class="w-7 h-7 rounded-full bg-[#404249]"></div>`
+                      }
+                      <span dangerouslySetInnerHTML=${{ __html: esc(u.displayName) }}></span>
+                    </div>
+                  </td>
+                  <td class="px-3 py-2.5 border-b border-border text-sm">${u.level}</td>
+                  <td class="px-3 py-2.5 border-b border-border text-sm text-accent font-semibold">${u.xp.toLocaleString()}</td>
+                  <td class="px-3 py-2.5 border-b border-border text-sm">${u.messages.toLocaleString()}</td>
+                </tr>
+              `)}
+            </tbody>
+          </table>
+        </div>
+      `}
+    </div>
+  `;
 }
