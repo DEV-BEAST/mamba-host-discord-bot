@@ -198,12 +198,36 @@
     }
     sl-option::part(base) { color: #f2f3f5; }
     sl-option::part(base):hover { background: #383a40; }
+    sl-option::part(base):focus, sl-option::part(base):focus-visible {
+      background: #383a40;
+      outline: none;
+    }
+    sl-option:focus::part(base), sl-option:focus-visible::part(base) {
+      background: #383a40;
+      outline: none;
+    }
     sl-option[aria-selected="true"]::part(base) {
       background: rgba(255,111,0,0.15);
       color: #FF6F00;
     }
     sl-option::part(checked-icon) {
       color: #FF6F00;
+    }
+    /* Override Shoelace current/focused option highlight */
+    sl-option[aria-selected="false"]::part(base) {
+      background: transparent;
+    }
+    sl-option[aria-selected="false"]:hover::part(base) {
+      background: #383a40;
+    }
+    sl-option.sl-option--current::part(base) {
+      background: #383a40 !important;
+    }
+    sl-option {
+      --sl-color-primary-600: #383a40;
+    }
+    sl-option[aria-selected="true"] {
+      --sl-color-primary-600: rgba(255,111,0,0.15);
     }
 
     /* Switch - proper toggle appearance */
