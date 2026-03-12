@@ -184,25 +184,12 @@
       color: #6d6f78;
     }
 
-    /* Select dropdown - ensure popups render above all content */
-    sl-select::part(popup) {
-      z-index: 10000;
-    }
-    sl-select::part(popup__content) {
-      z-index: 10000;
-    }
-    sl-select sl-popup::part(popup) {
-      z-index: 10000 !important;
-    }
-    sl-popup::part(popup) {
-      z-index: 10000 !important;
-    }
+    /* Select dropdown styling */
     sl-select::part(listbox) {
       background: #2b2d31;
       border: 1px solid #3f4147;
       border-radius: 6px;
       box-shadow: 0 8px 24px rgba(0,0,0,0.4);
-      z-index: 10000;
     }
     sl-option::part(base) { color: #f2f3f5; }
     sl-option::part(base):hover { background: #383a40; }
@@ -300,9 +287,14 @@
       z-index: 10000;
     }
 
-    /* Hoisted popups (select dropdowns) - ensure they render above everything */
-    body > sl-popup,
-    body > sl-popup::part(popup) {
+    /* Ensure all Shoelace popups render above other content */
+    sl-select, sl-color-picker, sl-dropdown {
+      --sl-z-index-dropdown: 10000;
+    }
+    sl-popup {
+      z-index: 10000 !important;
+    }
+    sl-popup::part(popup) {
       z-index: 10000 !important;
     }
 
