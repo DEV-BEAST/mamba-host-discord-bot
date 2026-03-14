@@ -4,6 +4,9 @@ let pool;
 
 export function getPool() {
   if (!pool) {
+    if (!process.env.DATABASE_URL) {
+      throw new Error('DATABASE_URL environment variable is not set');
+    }
     const url = new URL(process.env.DATABASE_URL);
     pool = mysql.createPool({
       host: url.hostname,
