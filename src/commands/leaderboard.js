@@ -1,5 +1,6 @@
 import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
-import { userXP, calculateLevel } from './leveling.js';
+import { calculateLevel } from './leveling.js';
+import { getGuildLeaderboard } from '../utils/database.js';
 
 export const data = new SlashCommandBuilder()
   .setName('leaderboard')
@@ -15,11 +16,9 @@ export async function execute(interaction) {
   const perPage = 10;
   const guildId = interaction.guild.id;
 
-  const allUsers = Array.from(userXP.entries())
-    .filter(([key]) => key.startsWith(guildId + '-'))
-    .sort((a, b) => b[1].xp - a[1].xp);
+  const allUsers = await getGuildLeaderboard(guildId, 1000);
 
-  const totalPages = Math.ceil(allUsers.length / perPage);
+  const totalPages = Math.ceil(allUsers.length / perPage) || 1;
   const startIdx = (page - 1) * perPage;
   const pageUsers = allUsers.slice(startIdx, startIdx + perPage);
 
@@ -28,14 +27,13 @@ export async function execute(interaction) {
   }
 
   const leaderboardText = await Promise.all(
-    pageUsers.map(async ([key, data], idx) => {
-      const userId = key.split('-')[1];
+    pageUsers.map(async (row, idx) => {
       try {
-        const user = await interaction.client.users.fetch(userId);
-        const level = calculateLevel(data.xp);
+        const user = await interaction.client.users.fetch(row.user_id);
+        const level = calculateLevel(row.xp);
         const rank = startIdx + idx + 1;
         const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : '   ';
-        return medal + ' **' + rank + '.** ' + user.tag + '\n    Level ' + level + ' • ' + data.xp.toLocaleString() + ' XP';
+        return medal + ' **' + rank + '.** ' + user.tag + '\n    Level ' + level + ' • ' + row.xp.toLocaleString() + ' XP';
       } catch {
         return null;
       }
