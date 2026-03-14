@@ -1,5 +1,6 @@
 import { Router } from 'express';
-import { userXP, calculateLevel } from '../../commands/leveling.js';
+import { calculateLevel } from '../../commands/leveling.js';
+import { getGuildLeaderboard } from '../../utils/database.js';
 
 export function createLeaderboardRouter() {
   const router = Router();
@@ -12,36 +13,32 @@ export function createLeaderboardRouter() {
     const guild = client.guilds.cache.get(guildId);
     if (!guild) return res.status(404).json({ error: 'Guild not found' });
 
-    const entries = Array.from(userXP.entries())
-      .filter(([key]) => key.startsWith(guildId + '-'))
-      .sort((a, b) => b[1].xp - a[1].xp)
-      .slice(0, 100); // top 100
+    const entries = await getGuildLeaderboard(guildId, 100);
 
     const leaderboard = await Promise.all(
-      entries.map(async ([key, data], idx) => {
-        const userId = key.split('-')[1];
+      entries.map(async (row, idx) => {
         try {
-          const user = await client.users.fetch(userId);
+          const user = await client.users.fetch(row.user_id);
           return {
             rank: idx + 1,
-            userId,
+            userId: row.user_id,
             username: user.username,
             displayName: user.globalName || user.username,
             avatar: user.displayAvatarURL({ size: 32 }),
-            level: calculateLevel(data.xp),
-            xp: data.xp,
-            messages: data.messages,
+            level: calculateLevel(row.xp),
+            xp: row.xp,
+            messages: row.messages,
           };
         } catch {
           return {
             rank: idx + 1,
-            userId,
+            userId: row.user_id,
             username: 'Unknown User',
             displayName: 'Unknown User',
             avatar: null,
-            level: calculateLevel(data.xp),
-            xp: data.xp,
-            messages: data.messages,
+            level: calculateLevel(row.xp),
+            xp: row.xp,
+            messages: row.messages,
           };
         }
       })

@@ -8,6 +8,7 @@ import { handleMessageForXP } from './src/commands/leveling.js';
 import { setCustomPresence } from './src/utils/presence.js';
 import { attachClient } from './src/dashboard/server.js';
 import botConfig from './src/utils/botConfig.js';
+import { initDatabase } from './src/utils/database.js';
 
 config();
 
@@ -205,5 +206,6 @@ client.on('error', (error) => {
   console.error('Discord client error:', error);
 });
 
-// Login to Discord
+// Initialize database and login to Discord
+await initDatabase();
 client.login(process.env.BOT_TOKEN);

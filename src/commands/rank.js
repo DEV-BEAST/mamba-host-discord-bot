@@ -12,7 +12,7 @@ export const data = new SlashCommandBuilder()
 export async function execute(interaction) {
   const user = interaction.options.getUser('user') || interaction.user;
   const guildId = interaction.guild.id;
-  const userData = getUserData(guildId, user.id);
+  const userData = await getUserData(guildId, user.id);
 
   const currentLevel = calculateLevel(userData.xp);
   const nextLevel = currentLevel + 1;
