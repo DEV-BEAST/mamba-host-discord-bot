@@ -30,7 +30,21 @@ export async function initDatabase() {
       PRIMARY KEY (guild_id, user_id)
     )
   `);
-  console.log('✓ Database initialized (user_xp table ready)');
+  await db.execute(`
+    CREATE TABLE IF NOT EXISTS mod_cases (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      guild_id VARCHAR(20) NOT NULL,
+      user_id VARCHAR(20) NOT NULL,
+      moderator_id VARCHAR(20) NOT NULL,
+      action ENUM('ban','kick','timeout','warn') NOT NULL,
+      reason TEXT,
+      duration INT DEFAULT NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      INDEX idx_guild (guild_id),
+      INDEX idx_user (guild_id, user_id)
+    )
+  `);
+  console.log('✓ Database initialized (user_xp, mod_cases tables ready)');
 }
 
 export async function getUser(guildId, userId) {
@@ -58,6 +72,44 @@ export async function deleteUser(guildId, userId) {
     'DELETE FROM user_xp WHERE guild_id = ? AND user_id = ?',
     [guildId, userId]
   );
+  return result.affectedRows > 0;
+}
+
+export async function createModCase(guildId, userId, moderatorId, action, reason, duration = null) {
+  const db = getPool();
+  const [result] = await db.execute(
+    'INSERT INTO mod_cases (guild_id, user_id, moderator_id, action, reason, duration) VALUES (?, ?, ?, ?, ?, ?)',
+    [guildId, userId, moderatorId, action, reason || null, duration]
+  );
+  return result.insertId;
+}
+
+export async function getModCases(guildId, page = 1, limit = 20) {
+  const db = getPool();
+  const offset = (page - 1) * limit;
+  const [rows] = await db.execute(
+    'SELECT * FROM mod_cases WHERE guild_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?',
+    [guildId, String(limit), String(offset)]
+  );
+  const [[{ total }]] = await db.execute(
+    'SELECT COUNT(*) as total FROM mod_cases WHERE guild_id = ?',
+    [guildId]
+  );
+  return { cases: rows, total, page, totalPages: Math.ceil(total / limit) };
+}
+
+export async function getModCasesForUser(guildId, userId) {
+  const db = getPool();
+  const [rows] = await db.execute(
+    'SELECT * FROM mod_cases WHERE guild_id = ? AND user_id = ? ORDER BY created_at DESC',
+    [guildId, userId]
+  );
+  return rows;
+}
+
+export async function deleteModCase(caseId) {
+  const db = getPool();
+  const [result] = await db.execute('DELETE FROM mod_cases WHERE id = ?', [String(caseId)]);
   return result.affectedRows > 0;
 }
 

@@ -10,12 +10,14 @@ import Overview from './pages/overview.js';
 import EmbedBuilder from './pages/embed-builder.js';
 import Settings from './pages/settings.js';
 import Leaderboard from './pages/leaderboard.js';
+import Moderation from './pages/moderation.js';
 
 const pages = {
   'overview': Overview,
   'embed-builder': EmbedBuilder,
   'settings': Settings,
   'leaderboard': Leaderboard,
+  'moderation': Moderation,
 };
 
 function App() {

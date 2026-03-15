@@ -8,6 +8,7 @@ import { createGuildsRouter } from './routes/api-guilds.js';
 import { createSettingsRouter } from './routes/api-settings.js';
 import { createEmbedRouter } from './routes/api-embed.js';
 import { createLeaderboardRouter } from './routes/api-leaderboard.js';
+import { createModerationRouter } from './routes/api-moderation.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -49,6 +50,7 @@ app.use('/api/guilds', requireAuth, createGuildsRouter());
 app.use('/api/settings', requireAuth, createSettingsRouter());
 app.use('/api/embed', requireAuth, createEmbedRouter());
 app.use('/api/leaderboard', requireAuth, createLeaderboardRouter());
+app.use('/api/moderation', requireAuth, createModerationRouter());
 
 // SPA fallback — serve index.html for non-API routes
 app.get('/{*splat}', (req, res) => {
