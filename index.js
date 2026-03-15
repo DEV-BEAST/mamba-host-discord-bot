@@ -1,4 +1,4 @@
-import { Client, Collection, Events, GatewayIntentBits, REST, Routes } from 'discord.js';
+import { Client, Collection, Events, GatewayIntentBits, Partials, REST, Routes } from 'discord.js';
 import { config } from 'dotenv';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
@@ -8,7 +8,11 @@ import { handleMessageForXP } from './src/commands/leveling.js';
 import { setCustomPresence } from './src/utils/presence.js';
 import { attachClient } from './src/dashboard/server.js';
 import botConfig, { initBotConfig } from './src/utils/botConfig.js';
-import { initDatabase } from './src/utils/database.js';
+import { initDatabase, incrementMessageActivity } from './src/utils/database.js';
+import { handleReactionAdd, handleReactionRemove } from './src/events/reactionRoles.js';
+import { handleCustomCommand } from './src/events/customCommands.js';
+import { startScheduler } from './src/utils/scheduler.js';
+import { startStatsCollector } from './src/utils/statsCollector.js';
 
 config();
 
@@ -18,6 +22,12 @@ const client = new Client({
     GatewayIntentBits.GuildMembers,
     GatewayIntentBits.GuildMessages,
     GatewayIntentBits.MessageContent,
+    GatewayIntentBits.GuildMessageReactions,
+  ],
+  partials: [
+    Partials.Message,
+    Partials.Reaction,
+    Partials.User,
   ],
 });
 
@@ -77,6 +87,10 @@ client.once(Events.ClientReady, (c) => {
 
   // Attach Discord client to the dashboard server
   attachClient(c, botConfig);
+
+  // Start background systems
+  startScheduler(c);
+  startStatsCollector(c);
 });
 
 // Auto-assign role on member join + welcome messages
@@ -108,13 +122,44 @@ client.on(Events.GuildMemberAdd, async (member) => {
   }
 });
 
-// Handle messages for XP tracking
+// Reaction role handlers
+client.on(Events.MessageReactionAdd, async (reaction, user) => {
+  try {
+    await handleReactionAdd(reaction, user);
+  } catch (error) {
+    console.error('Error handling reaction add:', error);
+  }
+});
+
+client.on(Events.MessageReactionRemove, async (reaction, user) => {
+  try {
+    await handleReactionRemove(reaction, user);
+  } catch (error) {
+    console.error('Error handling reaction remove:', error);
+  }
+});
+
+// Handle messages for XP tracking, custom commands, and message activity
 client.on(Events.MessageCreate, async (message) => {
+  if (message.author.bot || !message.guild) return;
+
+  // Custom commands (check first, skip XP if it was a command)
+  try {
+    const handled = await handleCustomCommand(message, botConfig);
+    if (handled) return;
+  } catch (error) {
+    console.error('Error handling custom command:', error);
+  }
+
+  // XP tracking
   try {
     await handleMessageForXP(message);
   } catch (error) {
     console.error('Error handling message for XP:', error);
   }
+
+  // Track message activity (fire-and-forget)
+  incrementMessageActivity(message.guild.id, message.channel.id).catch(() => {});
 });
 
 // Handle interactions

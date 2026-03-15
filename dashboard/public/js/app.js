@@ -11,6 +11,10 @@ import EmbedBuilder from './pages/embed-builder.js';
 import Settings from './pages/settings.js';
 import Leaderboard from './pages/leaderboard.js';
 import Moderation from './pages/moderation.js';
+import CustomCommands from './pages/custom-commands.js';
+import ReactionRoles from './pages/reaction-roles.js';
+import ScheduledMessages from './pages/scheduled-messages.js';
+import ServerStats from './pages/server-stats.js';
 
 const pages = {
   'overview': Overview,
@@ -18,6 +22,10 @@ const pages = {
   'settings': Settings,
   'leaderboard': Leaderboard,
   'moderation': Moderation,
+  'custom-commands': CustomCommands,
+  'reaction-roles': ReactionRoles,
+  'scheduled-messages': ScheduledMessages,
+  'server-stats': ServerStats,
 };
 
 function App() {

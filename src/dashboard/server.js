@@ -9,6 +9,10 @@ import { createSettingsRouter } from './routes/api-settings.js';
 import { createEmbedRouter } from './routes/api-embed.js';
 import { createLeaderboardRouter } from './routes/api-leaderboard.js';
 import { createModerationRouter } from './routes/api-moderation.js';
+import { createCustomCommandsRouter } from './routes/api-custom-commands.js';
+import { createReactionRolesRouter } from './routes/api-reaction-roles.js';
+import { createScheduledMessagesRouter } from './routes/api-scheduled-messages.js';
+import { createServerStatsRouter } from './routes/api-server-stats.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -51,6 +55,10 @@ app.use('/api/settings', requireAuth, createSettingsRouter());
 app.use('/api/embed', requireAuth, createEmbedRouter());
 app.use('/api/leaderboard', requireAuth, createLeaderboardRouter());
 app.use('/api/moderation', requireAuth, createModerationRouter());
+app.use('/api/custom-commands', requireAuth, createCustomCommandsRouter());
+app.use('/api/reaction-roles', requireAuth, createReactionRolesRouter());
+app.use('/api/scheduled-messages', requireAuth, createScheduledMessagesRouter());
+app.use('/api/server-stats', requireAuth, createServerStatsRouter());
 
 // SPA fallback — serve index.html for non-API routes
 app.get('/{*splat}', (req, res) => {

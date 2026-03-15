@@ -26,6 +26,7 @@ const botConfig = {
   autoRoleId: defaults.autoRoleId,
   welcome: { ...defaults.welcome },
   presence: { ...defaults.presence },
+  commandPrefix: '!',
   commandsRun: 0,
 
   /** Persist current settings to database */
