@@ -185,7 +185,7 @@ a.dc-embed-author-name:hover{text-decoration:underline}
 .presence-name{font-size:14px;font-weight:600;color:#f2f3f5}
 .presence-activity{font-size:12px;color:#949ba4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .presence-activity-type{color:#949ba4}
-.presence-streaming .presence-activity{color:#9146ff}
+.presence-streaming .presence-activity{color:#949ba4}
 
 /* Welcome preview */
 .welcome-preview{

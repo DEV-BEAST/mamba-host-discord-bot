@@ -44,7 +44,13 @@ export async function initDatabase() {
       INDEX idx_user (guild_id, user_id)
     )
   `);
-  console.log('✓ Database initialized (user_xp, mod_cases tables ready)');
+  await db.execute(`
+    CREATE TABLE IF NOT EXISTS bot_settings (
+      setting_key VARCHAR(50) PRIMARY KEY,
+      setting_value TEXT
+    )
+  `);
+  console.log('✓ Database initialized (user_xp, mod_cases, bot_settings tables ready)');
 }
 
 export async function getUser(guildId, userId) {
@@ -111,6 +117,25 @@ export async function deleteModCase(caseId) {
   const db = getPool();
   const [result] = await db.execute('DELETE FROM mod_cases WHERE id = ?', [String(caseId)]);
   return result.affectedRows > 0;
+}
+
+export async function setSetting(key, value) {
+  const db = getPool();
+  const val = JSON.stringify(value);
+  await db.execute(
+    'INSERT INTO bot_settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = ?',
+    [key, val, val]
+  );
+}
+
+export async function getAllSettings() {
+  const db = getPool();
+  const [rows] = await db.execute('SELECT setting_key, setting_value FROM bot_settings');
+  const settings = {};
+  for (const row of rows) {
+    try { settings[row.setting_key] = JSON.parse(row.setting_value); } catch { settings[row.setting_key] = row.setting_value; }
+  }
+  return settings;
 }
 
 export async function getGuildLeaderboard(guildId, limit = 100) {

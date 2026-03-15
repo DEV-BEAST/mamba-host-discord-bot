@@ -7,7 +7,7 @@ import { handleButtonInteraction, handleModalSubmit } from './src/events/interac
 import { handleMessageForXP } from './src/commands/leveling.js';
 import { setCustomPresence } from './src/utils/presence.js';
 import { attachClient } from './src/dashboard/server.js';
-import botConfig from './src/utils/botConfig.js';
+import botConfig, { initBotConfig } from './src/utils/botConfig.js';
 import { initDatabase } from './src/utils/database.js';
 
 config();
@@ -72,13 +72,8 @@ const rest = new REST().setToken(process.env.BOT_TOKEN);
 client.once(Events.ClientReady, (c) => {
   console.log(`✓ Bot is ready! Logged in as ${c.user.tag}`);
 
-  // Set default presence (streaming)
-  setCustomPresence(c, {
-    name: 'Game Servers | Discord Bots | VPS',
-    type: 'streaming',
-    status: 'online',
-    url: 'https://www.mambahost.com/',
-  });
+  // Apply saved presence (or defaults)
+  setCustomPresence(c, botConfig.presence);
 
   // Attach Discord client to the dashboard server
   attachClient(c, botConfig);
@@ -206,6 +201,7 @@ client.on('error', (error) => {
   console.error('Discord client error:', error);
 });
 
-// Initialize database and login to Discord
+// Initialize database, load config, and login to Discord
 await initDatabase();
+await initBotConfig();
 client.login(process.env.BOT_TOKEN);

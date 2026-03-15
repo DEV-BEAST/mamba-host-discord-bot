@@ -24,7 +24,7 @@ export function createSettingsRouter() {
   });
 
   // PUT /api/settings/presence
-  router.put('/presence', (req, res) => {
+  router.put('/presence', async (req, res) => {
     const { client, botConfig } = req.app.locals;
     const { name, type, status, url } = req.body;
 
@@ -40,23 +40,23 @@ export function createSettingsRouter() {
 
     // Apply to bot
     setCustomPresence(client, botConfig.presence);
-    botConfig.save();
+    await botConfig.save();
 
     res.json({ success: true, presence: botConfig.presence });
   });
 
   // PUT /api/settings/autorole
-  router.put('/autorole', (req, res) => {
+  router.put('/autorole', async (req, res) => {
     const { botConfig } = req.app.locals;
     const { roleId } = req.body;
 
     botConfig.autoRoleId = roleId || null;
-    botConfig.save();
+    await botConfig.save();
     res.json({ success: true, autoRoleId: botConfig.autoRoleId });
   });
 
   // PUT /api/settings/welcome
-  router.put('/welcome', (req, res) => {
+  router.put('/welcome', async (req, res) => {
     const { botConfig } = req.app.locals;
     const { enabled, channelId, guildId, message } = req.body;
 
@@ -64,7 +64,7 @@ export function createSettingsRouter() {
     if (channelId !== undefined) botConfig.welcome.channelId = channelId;
     if (guildId !== undefined) botConfig.welcome.guildId = guildId;
     if (message !== undefined) botConfig.welcome.message = message;
-    botConfig.save();
+    await botConfig.save();
 
     res.json({ success: true, welcome: botConfig.welcome });
   });
