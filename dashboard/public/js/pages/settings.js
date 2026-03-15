@@ -228,6 +228,7 @@ function WelcomeCard({ guilds, botInfo }) {
 
   const load = useCallback(async (settings) => {
     setEnabled(settings.welcome.enabled);
+    if (enabledRef.current) enabledRef.current.checked = !!settings.welcome.enabled;
     setMessage(settings.welcome.message || '');
     if (settings.welcome.guildId) {
       setGuildId(settings.welcome.guildId);
